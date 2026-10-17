@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Registration | IEDC Forms</title>
+  <meta name="description" content="Register for upcoming campus events and hackathons. Free entry and instant digital QR pass.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
+  <link rel="stylesheet" href="css/light-theme.css">
+</head>
+<body>
+
+  <!-- Minimal Header -->
+  <header class="app-header">
+    <div class="app-header-inner">
+      <div class="header-brand">
+        <span class="brand-badge">IEDC</span>
+        <span>EVENT FORMS</span>
+      </div>
+      <div class="header-actions">
+        <span class="pill-badge badge-free">Free Pass • ₹0</span>
+        <a href="admin.html" class="btn btn-secondary btn-sm" title="Admin Portal">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span>Admin</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container-narrow">
+    <!-- Active Form View (Shown when form loaded) -->
+    <div id="formView">
+      <form id="attendeeRegistrationForm">
+        <!-- Event Header Card -->
+        <div class="form-card form-header-card">
+          <img id="formBannerImg" class="form-header-banner" src="assets/images/hackathon.jpg" alt="Event Banner">
+          <div class="form-header-content">
+            <div class="form-meta-badges">
+              <span class="pill-badge badge-free">100% Free Entry • ₹0</span>
+              <span class="pill-badge badge-info" id="formCategoryBadge">Campus Event</span>
+            </div>
+            <h1 class="form-title" id="formTitle">Loading Event Form...</h1>
+            <p class="form-description" id="formDesc"></p>
+
+            <div class="form-event-details-bar">
+              <div class="form-event-detail-item" id="formDateItem">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                <span id="formDateText">Date TBD</span>
+              </div>
+              <div class="form-event-detail-item" id="formTimeItem">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span id="formTimeText">Time TBD</span>
+              </div>
+              <div class="form-event-detail-item" id="formVenueItem">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <span id="formVenueText">Venue TBD</span>
+              </div>
+            </div>
+
+            <div class="req-notice">* Indicates required question</div>
+          </div>
+        </div>
+
+        <!-- Dynamic Questions Container -->
+        <div id="questionsContainer">
+          <!-- Questions injected dynamically -->
+        </div>
+
+        <!-- Submit & Order Summary Card -->
+        <div class="submit-card">
+          <div class="fee-summary">
+            <span class="fee-amount">₹0 (Free Entry)</span>
+            <span class="fee-sub">Zero booking fee • Instant digital pass</span>
+          </div>
+          <button type="submit" class="btn btn-primary" id="btnSubmitForm">
+            <span id="submitSpinner" style="display:none; width:14px; height:14px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation: spin 0.8s linear infinite;"></span>
+            <span id="submitBtnText">Submit Registration</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Confirmation / E-Ticket View (Shown upon submission) -->
+    <div id="confirmationView" style="display:none;">
+      <div class="form-card confirmation-container">
+        <div class="success-icon-badge">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <h2 style="font-size:1.5rem; font-weight:800; color:var(--text-main); margin-bottom:6px;">
+          Your registration is confirmed!
+        </h2>
+        <p style="color:var(--text-secondary); font-size:0.95rem; margin-bottom:20px;">
+          Your response has been recorded and synced to Google Sheets. Here is your digital entry pass:
+        </p>
+
+        <!-- BookMyShow Light E-Ticket Pass -->
+        <div class="ticket-light-pass" id="ticketPassElement">
+          <div class="ticket-light-header">
+            <span class="ticket-pass-brand">IEDC EVENT PASS</span>
+            <span class="ticket-pass-badge">VERIFIED • ₹0 FREE</span>
+          </div>
+
+          <div class="ticket-light-body">
+            <div class="ticket-id-pill" id="ticketBookingId">IEDC-0000</div>
+            <h3 class="ticket-ev-name" id="ticketEventTitle">Event Title</h3>
+
+            <div class="ticket-details-table">
+              <div class="ticket-detail-item">
+                <span class="ticket-detail-label">Attendee</span>
+                <span class="ticket-detail-val" id="ticketAttendeeName">Name</span>
+              </div>
+              <div class="ticket-detail-item">
+                <span class="ticket-detail-label">Fee</span>
+                <span class="ticket-detail-val" style="color:var(--accent-green);">₹0 (Complimentary)</span>
+              </div>
+              <div class="ticket-detail-item">
+                <span class="ticket-detail-label">Date</span>
+                <span class="ticket-detail-val" id="ticketDateVal">Date</span>
+              </div>
+              <div class="ticket-detail-item">
+                <span class="ticket-detail-label">Time</span>
+                <span class="ticket-detail-val" id="ticketTimeVal">Time</span>
+              </div>
+              <div class="ticket-detail-item" style="grid-column: span 2;">
+                <span class="ticket-detail-label">Venue</span>
+                <span class="ticket-detail-val" id="ticketVenueVal">Venue</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Perforated Tear Line -->
+          <div class="ticket-tear-strip">
+            <div class="ticket-tear-line"></div>
+          </div>
+
+          <!-- QR Code Section -->
+          <div class="ticket-qr-strip">
+            <div class="qr-canvas-holder" id="ticketQrHolder">
+              <!-- QR Code generated here -->
+            </div>
+            <div style="flex:1;">
+              <h4 style="font-size:0.92rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">
+                Check-in QR Code
+              </h4>
+              <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.4;">
+                Present this QR code or downloaded pass at the entrance desk for seamless verification.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ticket Actions -->
+        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:24px;">
+          <button class="btn btn-primary" onclick="window.print()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Print / Save Pass (PDF)</span>
+          </button>
+          <a class="btn btn-secondary" id="btnAddToCalendar" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            <span>Google Calendar</span>
+          </a>
+          <button class="btn btn-secondary" id="btnSubmitAnother">
+            <span>Submit Another Response</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error State (If form not found) -->
+    <div id="formErrorView" style="display:none;" class="form-card" style="text-align:center; padding:40px 20px;">
+      <h2 style="color:var(--accent-rose); margin-bottom:8px;">Form Not Found</h2>
+      <p style="color:var(--text-muted); margin-bottom:16px;">The requested event registration form does not exist or may have expired.</p>
+      <a href="index.html" class="btn btn-secondary">View Available Events</a>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div class="light-toast" id="lightToast">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+    <span id="toastMsg">Response recorded</span>
+  </div>
+
+  <style>
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+
+  <!-- Scripts -->
+  <script src="js/qrcode.min.js"></script>
+  <script src="js/forms-store.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      // 1. Determine active form from URL parameter ?form=... or default to first
+      const params = new URLSearchParams(window.location.search);
+      const formId = params.get('form') || params.get('id');
+      const allForms = FormsStore.getForms();
+      const currentForm = formId ? allForms.find(f => f.id === formId) : allForms[0];
+
+      const dom = {
+        formView: document.getElementById('formView'),
+        confirmationView: document.getElementById('confirmationView'),
+        formErrorView: document.getElementById('formErrorView'),
+        formBannerImg: document.getElementById('formBannerImg'),
+        formCategoryBadge: document.getElementById('formCategoryBadge'),
+        formTitle: document.getElementById('formTitle'),
+        formDesc: document.getElementById('formDesc'),
+        formDateText: document.getElementById('formDateText'),
+        formTimeText: document.getElementById('formTimeText'),
+        formVenueText: document.getElementById('formVenueText'),
+        questionsContainer: document.getElementById('questionsContainer'),
+        attendeeRegistrationForm: document.getElementById('attendeeRegistrationForm'),
+        btnSubmitForm: document.getElementById('btnSubmitForm'),
+        submitBtnText: document.getElementById('submitBtnText'),
+        submitSpinner: document.getElementById('submitSpinner'),
+        
+        // Confirmation ticket
+        ticketBookingId: document.getElementById('ticketBookingId'),
+        ticketEventTitle: document.getElementById('ticketEventTitle'),
+        ticketAttendeeName: document.getElementById('ticketAttendeeName'),
+        ticketDateVal: document.getElementById('ticketDateVal'),
+        ticketTimeVal: document.getElementById('ticketTimeVal'),
+        ticketVenueVal: document.getElementById('ticketVenueVal'),
+        ticketQrHolder: document.getElementById('ticketQrHolder'),
+        btnAddToCalendar: document.getElementById('btnAddToCalendar'),
+        btnSubmitAnother: document.getElementById('btnSubmitAnother'),
+        lightToast: document.getElementById('lightToast'),
+        toastMsg: document.getElementById('toastMsg')
+      };
+
+      if (!currentForm) {
+        dom.formView.style.display = 'none';
+        dom.formErrorView.style.display = 'block';
+        return;
+      }
+
+      // 2. Populate Header
+      document.title = `${currentForm.title} | Registration`;
+      dom.formBannerImg.src = currentForm.bannerUrl || 'assets/images/hackathon.jpg';
+      dom.formTitle.textContent = currentForm.title;
+      dom.formDesc.textContent = currentForm.description || '';
+      dom.formDateText.textContent = currentForm.dateStr || 'Date TBD';
+      dom.formTimeText.textContent = currentForm.timeStr || 'Time TBD';
+      dom.formVenueText.textContent = currentForm.venue || 'Venue TBD';
+
+      // 3. Render Questions (Google Forms Style)
+      renderQuestions(currentForm.questions || []);
+
+      function renderQuestions(questions) {
+        let html = '';
+        questions.forEach((q, idx) => {
+          const isReq = q.required;
+          const reqStar = isReq ? '<span class="req-star">*</span>' : '';
+          const help = q.helpText ? `<div class="question-help">${q.helpText}</div>` : '';
+          const fieldId = `q_input_${idx}`;
+
+          html += `<div class="question-card" id="qcard_${idx}">`;
+          html += `<label class="question-label" for="${fieldId}">${q.title} ${reqStar}</label>`;
+          if (help) html += help;
+
+          // Number Only question (requested specifically!)
+          if (q.type === 'number') {
+            html += `<input type="number" class="form-control" id="${fieldId}" name="${q.title}" placeholder="${q.placeholder || 'Enter a number...'}" ${isReq ? 'required' : ''}>`;
+          }
+          // Single select (Radio)
+          else if (q.type === 'single_select') {
+            const options = q.options || ['Option 1', 'Option 2'];
+            html += `<div class="options-group">`;
+            options.forEach((opt, oIdx) => {
+              html += `
+                <label class="option-item">
+                  <input type="radio" name="${q.title}" value="${opt}" ${isReq && oIdx === 0 ? 'checked' : ''} ${isReq ? 'required' : ''}>
+                  <span>${opt}</span>
+                </label>
+              `;
+            });
+            html += `</div>`;
+          }
+          // Multiple select (Checkboxes)
+          else if (q.type === 'multiple_select') {
+            const options = q.options || ['Option 1', 'Option 2'];
+            html += `<div class="options-group">`;
+            options.forEach(opt => {
+              html += `
+                <label class="option-item">
+                  <input type="checkbox" name="${q.title}" value="${opt}">
+                  <span>${opt}</span>
+                </label>
+              `;
+            });
+            html += `</div>`;
+          }
+          // Dropdown (Select)
+          else if (q.type === 'dropdown') {
+            const options = q.options || ['Option 1', 'Option 2'];
+            html += `<select class="form-control" id="${fieldId}" name="${q.title}" ${isReq ? 'required' : ''}>`;
+            html += `<option value="" disabled selected>Select an option...</option>`;
+            options.forEach(opt => {
+              html += `<option value="${opt}">${opt}</option>`;
+            });
+            html += `</select>`;
+          }
+          // Paragraph / Textarea
+          else if (q.type === 'paragraph' || q.type === 'textarea') {
+            html += `<textarea class="form-control" id="${fieldId}" name="${q.title}" placeholder="${q.placeholder || 'Your answer...'}" ${isReq ? 'required' : ''}></textarea>`;
+          }
+          // Email
+          else if (q.type === 'email') {
+            html += `<input type="email" class="form-control" id="${fieldId}" name="${q.title}" placeholder="${q.placeholder || 'example@gmail.com'}" ${isReq ? 'required' : ''}>`;
+          }
+          // Tel
+          else if (q.type === 'tel') {
+            html += `<input type="tel" class="form-control" id="${fieldId}" name="${q.title}" placeholder="${q.placeholder || 'Mobile number'}" ${isReq ? 'required' : ''}>`;
+          }
+          // Standard Short Text
+          else {
+            html += `<input type="text" class="form-control" id="${fieldId}" name="${q.title}" placeholder="${q.placeholder || 'Your answer...'}" ${isReq ? 'required' : ''}>`;
+          }
+
+          html += `</div>`;
+        });
+
+        dom.questionsContainer.innerHTML = html;
+      }
+
+      // 4. Form Submit Handler
+      dom.attendeeRegistrationForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        // Loading state
+        dom.btnSubmitForm.disabled = true;
+        dom.submitSpinner.style.display = 'inline-block';
+        dom.submitBtnText.textContent = 'Submitting...';
+
+        // Gather answers
+        const formData = new FormData(dom.attendeeRegistrationForm);
+        const answers = {};
+
+        for (const [key, value] of formData.entries()) {
+          if (answers[key]) {
+            if (Array.isArray(answers[key])) {
+              answers[key].push(value);
+            } else {
+              answers[key] = [answers[key], value];
+            }
+          } else {
+            answers[key] = value;
+          }
+        }
+
+        // Save & send to Google Sheets
+        const record = await FormsStore.recordSubmission(currentForm, answers);
+
+        // Reset submit button
+        dom.btnSubmitForm.disabled = false;
+        dom.submitSpinner.style.display = 'none';
+        dom.submitBtnText.textContent = 'Submit Registration';
+
+        // Show Confirmation & Ticket
+        showConfirmation(record, currentForm);
+      });
+
+      // 5. Show Confirmation with E-Ticket & QR Code
+      function showConfirmation(record, form) {
+        dom.formView.style.display = 'none';
+        dom.confirmationView.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Populate Ticket
+        dom.ticketBookingId.textContent = record['Booking ID'];
+        dom.ticketEventTitle.textContent = form.title;
+        dom.ticketAttendeeName.textContent = record['Full Name'] || record['Name'] || record['full_name'] || Object.values(record)[6] || 'Registered Attendee';
+        dom.ticketDateVal.textContent = form.dateStr || 'Confirmed';
+        dom.ticketTimeVal.textContent = form.timeStr || '09:00 AM';
+        dom.ticketVenueVal.textContent = form.venue || 'Campus Auditorium';
+
+        // Generate Scannable QR Code
+        dom.ticketQrHolder.innerHTML = '';
+        try {
+          const qrText = `IEDC PASS: ${record['Booking ID']} | Event: ${form.title} | Attendee: ${dom.ticketAttendeeName.textContent} | Status: CONFIRMED FREE PASS`;
+          new QRCode(dom.ticketQrHolder, {
+            text: qrText,
+            width: 90,
+            height: 90,
+            colorDark: '#0f172a',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } catch (err) {
+          console.warn("QR code render note:", err);
+        }
+
+        // Configure Google Calendar Link
+        const gCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(form.title)}&details=${encodeURIComponent(form.description || '')}&location=${encodeURIComponent(form.venue || '')}`;
+        dom.btnAddToCalendar.href = gCalUrl;
+
+        showToast("Registration saved successfully!");
+      }
+
+      dom.btnSubmitAnother.addEventListener('click', () => {
+        dom.attendeeRegistrationForm.reset();
+        dom.confirmationView.style.display = 'none';
+        dom.formView.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      function showToast(text) {
+        dom.toastMsg.textContent = text;
+        dom.lightToast.classList.add('show');
+        setTimeout(() => dom.lightToast.classList.remove('show'), 3500);
+      }
+
+    })();
+  </script>
+</body>
+</html>

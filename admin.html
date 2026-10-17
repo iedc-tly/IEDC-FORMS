@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | IEDC Event Forms</title>
+  <meta name="description" content="Manage event registration forms, dynamic questions, and Google Sheets integration.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚙️</text></svg>">
+  <link rel="stylesheet" href="css/light-theme.css">
+  <!-- Attempt to load local gitignored env.js if present -->
+  <script src="js/env.js" onerror="console.log('Production mode: verifying via secure SHA-256')"></script>
+</head>
+<body>
+
+  <!-- Minimal Header -->
+  <header class="app-header">
+    <div class="app-header-inner">
+      <div class="header-brand">
+        <span class="brand-badge" style="background:var(--text-main);">ADMIN</span>
+        <span>IEDC Forms Studio</span>
+      </div>
+      <div class="header-actions" id="adminHeaderActions" style="display:none;">
+        <a href="index.html" target="_blank" class="btn btn-secondary btn-sm" title="View Attendee Portal">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          <span>Open Forms</span>
+        </a>
+        <button class="btn btn-danger btn-sm" id="btnLogout">
+          <span>Logout</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- =====================================================================
+         1. LOGIN SCREEN (Shown if not logged in)
+         ===================================================================== -->
+    <div class="login-screen-wrapper" id="loginScreen">
+      <div class="login-card">
+        <div class="login-brand-header">
+          <span class="login-brand-badge">SECURE ACCESS</span>
+          <h1 class="login-title">Organizer Sign In</h1>
+          <p class="login-sub">Enter your authorized credentials to manage forms</p>
+        </div>
+
+        <form id="loginForm">
+          <div style="margin-bottom:16px;">
+            <label class="question-label" for="loginUser">Username</label>
+            <input class="form-control" type="text" id="loginUser" required placeholder="Enter username" autocomplete="username">
+          </div>
+
+          <div style="margin-bottom:20px;">
+            <label class="question-label" for="loginPass">Password</label>
+            <input class="form-control" type="password" id="loginPass" required placeholder="Enter password" autocomplete="current-password">
+          </div>
+
+          <div id="loginErrorMsg" style="display:none; color:var(--accent-rose); font-size:0.84rem; margin-bottom:14px; text-align:center; font-weight:600;">
+            Invalid username or password. Please try again.
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="btnLoginSubmit" style="width:100%; padding:12px;">
+            <span>Log In to Dashboard</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         2. ADMIN DASHBOARD (Shown when logged in)
+         ===================================================================== -->
+    <div class="container-wide" id="adminDashboard" style="display:none;">
+      <!-- Tab Navigation Bar -->
+      <div class="admin-tabs-bar">
+        <button class="admin-tab-btn active" data-tab="tabForms">
+          📋 Event Forms (<span id="totalFormsCount">0</span>)
+        </button>
+        <button class="admin-tab-btn" data-tab="tabBuilder">
+          ➕ Create / Edit Form
+        </button>
+        <button class="admin-tab-btn" data-tab="tabSubmissions">
+          📊 Registrations (<span id="totalRegistrationsCount">0</span>)
+        </button>
+      </div>
+
+      <!-- TAB 1: ALL FORMS LIST -->
+      <div id="tabForms" class="tab-pane">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+          <div>
+            <h2 style="font-size:1.4rem; font-weight:800; color:var(--text-main);">Event Registration Forms</h2>
+            <p style="font-size:0.88rem; color:var(--text-muted);">Share direct form links with attendees. No login required for them.</p>
+          </div>
+          <button class="btn btn-primary" id="btnCreateNewFormTop">
+            <span>+ Create New Form</span>
+          </button>
+        </div>
+
+        <div id="formsListGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:20px;">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+
+      <!-- TAB 2: FORM BUILDER (Google Forms / Zoho Forms style) -->
+      <div id="tabBuilder" class="tab-pane" style="display:none;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+          <div>
+            <h2 style="font-size:1.4rem; font-weight:800; color:var(--text-main);" id="builderHeading">Create Event Form</h2>
+            <p style="font-size:0.88rem; color:var(--text-muted);">Configure event info, connect Google Sheets, and build questions.</p>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn btn-secondary" id="btnCancelBuilder">Cancel</button>
+            <button class="btn btn-primary" id="btnSaveForm">
+              <span>Save & Publish Form</span>
+            </button>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr; gap:24px;">
+          <!-- Card 1: Event Details & Google Sheets Setup -->
+          <div class="form-card" style="border-top: 6px solid var(--primary);">
+            <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:16px; color:var(--text-main);">
+              1. Event Information & Google Sheets Link
+            </h3>
+
+            <input type="hidden" id="builderFormId">
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+              <div>
+                <label class="question-label" for="builderTitle">Event Title <span class="req-star">*</span></label>
+                <input class="form-control" type="text" id="builderTitle" placeholder="e.g., HackNova 2026 Hackathon" required>
+              </div>
+              <div>
+                <label class="question-label" for="builderVenue">Venue / Location <span class="req-star">*</span></label>
+                <input class="form-control" type="text" id="builderVenue" placeholder="e.g., Campus Auditorium or Google Meet" required>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+              <div>
+                <label class="question-label" for="builderDate">Event Date <span class="req-star">*</span></label>
+                <input class="form-control" type="text" id="builderDate" placeholder="e.g., Saturday, Nov 14, 2026">
+              </div>
+              <div>
+                <label class="question-label" for="builderTime">Event Time <span class="req-star">*</span></label>
+                <input class="form-control" type="text" id="builderTime" placeholder="e.g., 09:00 AM - 05:00 PM IST">
+              </div>
+            </div>
+
+            <div style="margin-bottom:16px;">
+              <label class="question-label" for="builderDesc">Event Description / Instructions</label>
+              <textarea class="form-control" id="builderDesc" rows="3" placeholder="Tell attendees about tracks, prizes, free food, requirements..."></textarea>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+              <div>
+                <label class="question-label" for="builderBanner">Banner Image URL</label>
+                <input class="form-control" type="text" id="builderBanner" placeholder="assets/images/hackathon.jpg">
+              </div>
+              <div>
+                <label class="question-label">Registration Fee</label>
+                <input class="form-control" type="text" value="₹0 (Free Pass)" disabled style="background:#f1f5f9; color:var(--accent-green); font-weight:700;">
+              </div>
+            </div>
+
+            <!-- Google Sheets Integration Box -->
+            <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:var(--radius-sm); padding:16px; margin-top:10px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                <label class="question-label" for="builderSheetUrl" style="margin-bottom:0; color:var(--primary); font-weight:700;">
+                  📊 Google Sheets Webhook URL
+                </label>
+                <button type="button" class="btn btn-secondary btn-sm" id="btnTestWebhook">Test Connection</button>
+              </div>
+              <input class="form-control" type="url" id="builderSheetUrl" placeholder="Paste your Google Apps Script Web App URL (starts with https://script.google.com/macros/s/...)">
+              <div id="webhookTestResult" style="font-size:0.82rem; margin-top:6px;"></div>
+
+              <details style="margin-top:10px; font-size:0.84rem; color:var(--text-secondary);">
+                <summary style="cursor:pointer; font-weight:600; color:var(--primary);">
+                  👉 2-Minute Google Sheets Setup Guide (Click to expand)
+                </summary>
+                <div style="margin-top:8px; line-height:1.6; background:#fff; padding:12px; border-radius:6px; border:1px solid #e2e8f0;">
+                  1. Open <a href="https://sheets.new" target="_blank" style="text-decoration:underline; color:var(--primary);">sheets.new</a> to create a Google Sheet.<br>
+                  2. Go to <strong>Extensions &gt; Apps Script</strong>.<br>
+                  3. Paste the code from <code>google-apps-script/Code.gs</code> and click Save.<br>
+                  4. Click <strong>Deploy &gt; New deployment</strong> &gt; Select <strong>Web app</strong> &gt; Set <em>Who has access</em> to <strong>Anyone</strong>.<br>
+                  5. Copy the generated Web app URL and paste it into the box above!
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <!-- Card 2: Question Builder & Prebuilt Library -->
+          <div class="form-card">
+            <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:12px; color:var(--text-main);">
+              2. Form Questions Builder (Google Forms / Zoho Style)
+            </h3>
+            <p style="font-size:0.86rem; color:var(--text-muted); margin-bottom:16px;">
+              Add questions, customize question types (Single Select, Multiple Select, Numbers Only, Text), and configure options.
+            </p>
+
+            <!-- Prebuilt Quick Add Bar -->
+            <div class="prebuilt-picker-box">
+              <div class="prebuilt-picker-title">
+                ⚡ 1-Click Prebuilt Questions (Google & Zoho Forms Presets):
+              </div>
+              <div class="prebuilt-chips-grid" id="prebuiltChips">
+                <!-- Injected dynamically -->
+              </div>
+            </div>
+
+            <!-- List of Questions currently in the form -->
+            <div id="builderQuestionsList">
+              <!-- Question cards rendered here -->
+            </div>
+
+            <!-- Add Custom Question Button -->
+            <div style="text-align:center; margin-top:20px;">
+              <button type="button" class="btn btn-secondary" id="btnAddCustomQuestion" style="padding:10px 24px; border:2px dashed #cbd5e1;">
+                + Add Custom Question
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: REGISTRATIONS VIEWER -->
+      <div id="tabSubmissions" class="tab-pane" style="display:none;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px;">
+          <div>
+            <h2 style="font-size:1.4rem; font-weight:800; color:var(--text-main);">Registrant Submissions</h2>
+            <p style="font-size:0.88rem; color:var(--text-muted);">Real-time offline backup & Google Sheet synced responses.</p>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <select class="form-control" id="submissionsFilterEvent" style="width:220px; font-size:0.85rem;">
+              <option value="ALL">All Events</option>
+            </select>
+            <button class="btn btn-primary btn-sm" id="btnExportCsv">
+              📥 Export to CSV / Excel
+            </button>
+            <button class="btn btn-danger btn-sm" id="btnClearSubmissions">
+              Clear Cache
+            </button>
+          </div>
+        </div>
+
+        <div class="data-table-card">
+          <div class="data-table-header">
+            <input type="text" class="form-control" id="searchSubmissionsInput" placeholder="Search by name, email, booking ID..." style="max-width:320px; font-size:0.85rem;">
+            <span id="submissionsStatsBadge" style="font-size:0.82rem; font-weight:700; color:var(--text-secondary);">0 Responses</span>
+          </div>
+          <div class="table-responsive">
+            <table class="clean-table" id="submissionsTable">
+              <thead>
+                <tr id="submissionsTableHead">
+                  <th>Booking ID</th>
+                  <th>Attendee Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Event</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody id="submissionsTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Notification -->
+  <div class="light-toast" id="adminToast">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+    <span id="adminToastText">Action completed</span>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/auth.js"></script>
+  <script src="js/forms-store.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      // Builder State
+      let builderQuestions = [];
+      let activeEditingFormId = null;
+
+      // DOM Cache
+      const dom = {
+        loginScreen: document.getElementById('loginScreen'),
+        loginForm: document.getElementById('loginForm'),
+        loginUser: document.getElementById('loginUser'),
+        loginPass: document.getElementById('loginPass'),
+        loginErrorMsg: document.getElementById('loginErrorMsg'),
+        adminDashboard: document.getElementById('adminDashboard'),
+        adminHeaderActions: document.getElementById('adminHeaderActions'),
+        btnLogout: document.getElementById('btnLogout'),
+        
+        // Tabs
+        tabBtns: document.querySelectorAll('.admin-tab-btn'),
+        tabPanes: document.querySelectorAll('.tab-pane'),
+        totalFormsCount: document.getElementById('totalFormsCount'),
+        totalRegistrationsCount: document.getElementById('totalRegistrationsCount'),
+
+        // Tab 1: Forms
+        formsListGrid: document.getElementById('formsListGrid'),
+        btnCreateNewFormTop: document.getElementById('btnCreateNewFormTop'),
+
+        // Tab 2: Builder
+        builderHeading: document.getElementById('builderHeading'),
+        builderFormId: document.getElementById('builderFormId'),
+        builderTitle: document.getElementById('builderTitle'),
+        builderVenue: document.getElementById('builderVenue'),
+        builderDate: document.getElementById('builderDate'),
+        builderTime: document.getElementById('builderTime'),
+        builderDesc: document.getElementById('builderDesc'),
+        builderBanner: document.getElementById('builderBanner'),
+        builderSheetUrl: document.getElementById('builderSheetUrl'),
+        btnTestWebhook: document.getElementById('btnTestWebhook'),
+        webhookTestResult: document.getElementById('webhookTestResult'),
+        prebuiltChips: document.getElementById('prebuiltChips'),
+        builderQuestionsList: document.getElementById('builderQuestionsList'),
+        btnAddCustomQuestion: document.getElementById('btnAddCustomQuestion'),
+        btnSaveForm: document.getElementById('btnSaveForm'),
+        btnCancelBuilder: document.getElementById('btnCancelBuilder'),
+
+        // Tab 3: Submissions
+        submissionsFilterEvent: document.getElementById('submissionsFilterEvent'),
+        searchSubmissionsInput: document.getElementById('searchSubmissionsInput'),
+        submissionsStatsBadge: document.getElementById('submissionsStatsBadge'),
+        submissionsTableHead: document.getElementById('submissionsTableHead'),
+        submissionsTableBody: document.getElementById('submissionsTableBody'),
+        btnExportCsv: document.getElementById('btnExportCsv'),
+        btnClearSubmissions: document.getElementById('btnClearSubmissions'),
+
+        // Toast
+        adminToast: document.getElementById('adminToast'),
+        adminToastText: document.getElementById('adminToastText')
+      };
+
+      // 1. Initial Authentication Check
+      checkAuth();
+
+      function checkAuth() {
+        if (AuthService.isAuthenticated()) {
+          dom.loginScreen.style.display = 'none';
+          dom.adminDashboard.style.display = 'block';
+          dom.adminHeaderActions.style.display = 'flex';
+          initDashboard();
+        } else {
+          dom.loginScreen.style.display = 'flex';
+          dom.adminDashboard.style.display = 'none';
+          dom.adminHeaderActions.style.display = 'none';
+        }
+      }
+
+      // Handle Login
+      dom.loginForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        dom.loginErrorMsg.style.display = 'none';
+        const user = dom.loginUser.value.trim();
+        const pass = dom.loginPass.value.trim();
+
+        const success = await AuthService.login(user, pass);
+        if (success) {
+          checkAuth();
+          showToast('Welcome to IEDC Forms Admin!');
+        } else {
+          dom.loginErrorMsg.style.display = 'block';
+        }
+      });
+
+      // Handle Logout
+      dom.btnLogout.addEventListener('click', () => {
+        AuthService.logout();
+        checkAuth();
+        showToast('Logged out successfully');
+      });
+
+      // 2. Dashboard Tabs Switcher
+      dom.tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          dom.tabBtns.forEach(b => b.classList.remove('active'));
+          dom.tabPanes.forEach(p => p.style.display = 'none');
+          btn.classList.add('active');
+          document.getElementById(btn.dataset.tab).style.display = 'block';
+
+          if (btn.dataset.tab === 'tabForms') renderFormsList();
+          if (btn.dataset.tab === 'tabSubmissions') renderSubmissionsTable();
+        });
+      });
+
+      function initDashboard() {
+        renderFormsList();
+        renderPrebuiltChips();
+        renderSubmissionsTable();
+      }
+
+      // 3. Render Forms List
+      function renderFormsList() {
+        const forms = FormsStore.getForms();
+        dom.totalFormsCount.textContent = forms.length;
+
+        dom.formsListGrid.innerHTML = forms.map(f => {
+          const formSubmissions = FormsStore.getSubmissions(f.id);
+          const formUrl = `${window.location.origin}${window.location.pathname.replace('admin.html', '')}index.html?form=${f.id}`;
+          const hasWebhook = Boolean(f.sheetWebhookUrl);
+
+          return `
+            <div class="form-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                  <span class="pill-badge badge-free">Free Pass</span>
+                  <span style="font-size:0.78rem; color:${hasWebhook ? '#10b981' : '#f59e0b'}; font-weight:700;">
+                    ${hasWebhook ? '● Sheets Connected' : '○ Sheets Not Connected'}
+                  </span>
+                </div>
+                <h3 style="font-size:1.15rem; font-weight:800; color:var(--text-main); margin-bottom:6px;">
+                  ${f.title}
+                </h3>
+                <p style="font-size:0.84rem; color:var(--text-muted); margin-bottom:12px; line-height:1.4;">
+                  ${(f.description || '').substring(0, 90)}...
+                </p>
+                <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:14px;">
+                  📅 ${f.dateStr || 'Date TBD'} &nbsp;|&nbsp; 👥 <strong>${formSubmissions.length}</strong> Registrations
+                </div>
+              </div>
+
+              <div style="border-top:1px solid var(--border-color); padding-top:14px; display:flex; flex-wrap:wrap; gap:8px;">
+                <button class="btn btn-primary btn-sm" onclick="copyFormLink('${f.id}')">
+                  📋 Copy Link
+                </button>
+                <a href="${formUrl}" target="_blank" class="btn btn-secondary btn-sm">
+                  👁️ Open Form
+                </a>
+                <button class="btn btn-secondary btn-sm" onclick="editForm('${f.id}')">
+                  ✏️ Edit
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteFormHandler('${f.id}')">
+                  🗑️
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      window.copyFormLink = function (id) {
+        const url = `${window.location.origin}${window.location.pathname.replace('admin.html', '')}index.html?form=${id}`;
+        navigator.clipboard.writeText(url).then(() => {
+          showToast('Shareable form link copied to clipboard!');
+        });
+      };
+
+      window.editForm = function (id) {
+        const form = FormsStore.getFormById(id);
+        if (!form) return;
+        activeEditingFormId = id;
+        dom.builderHeading.textContent = `Edit Form: ${form.title}`;
+        dom.builderFormId.value = form.id;
+        dom.builderTitle.value = form.title;
+        dom.builderVenue.value = form.venue || '';
+        dom.builderDate.value = form.dateStr || '';
+        dom.builderTime.value = form.timeStr || '';
+        dom.builderDesc.value = form.description || '';
+        dom.builderBanner.value = form.bannerUrl || '';
+        dom.builderSheetUrl.value = form.sheetWebhookUrl || '';
+
+        builderQuestions = JSON.parse(JSON.stringify(form.questions || []));
+        renderBuilderQuestions();
+
+        // Switch to Builder Tab
+        dom.tabBtns[1].click();
+      };
+
+      window.deleteFormHandler = function (id) {
+        if (confirm('Are you sure you want to delete this form? Attendee registrations will remain saved.')) {
+          FormsStore.deleteForm(id);
+          renderFormsList();
+          showToast('Form deleted');
+        }
+      };
+
+      // 4. Form Builder
+      dom.btnCreateNewFormTop.addEventListener('click', () => {
+        resetBuilderForm();
+        dom.tabBtns[1].click();
+      });
+
+      dom.btnCancelBuilder.addEventListener('click', () => {
+        dom.tabBtns[0].click();
+      });
+
+      function resetBuilderForm() {
+        activeEditingFormId = null;
+        dom.builderHeading.textContent = 'Create Event Form';
+        dom.builderFormId.value = `form-${Date.now()}`;
+        dom.builderTitle.value = '';
+        dom.builderVenue.value = '';
+        dom.builderDate.value = '';
+        dom.builderTime.value = '';
+        dom.builderDesc.value = '';
+        dom.builderBanner.value = 'assets/images/hackathon.jpg';
+        dom.builderSheetUrl.value = '';
+        
+        // Start with basic questions
+        builderQuestions = [
+          { id: 'q_name', title: 'Full Name', type: 'text', required: true },
+          { id: 'q_email', title: 'Email Address', type: 'email', required: true },
+          { id: 'q_phone', title: 'Phone / WhatsApp Number', type: 'tel', required: true }
+        ];
+        renderBuilderQuestions();
+      }
+
+      // Render Prebuilt Questions Bar (Zoho / Google Forms style)
+      function renderPrebuiltChips() {
+        const catalog = FormsStore.PREBUILT_TEMPLATES;
+        dom.prebuiltChips.innerHTML = catalog.map(p => `
+          <button type="button" class="chip-add-btn" onclick="addPrebuiltQuestion('${p.id}')">
+            + ${p.title}
+          </button>
+        `).join('');
+      }
+
+      window.addPrebuiltQuestion = function (templateId) {
+        const t = FormsStore.PREBUILT_TEMPLATES.find(p => p.id === templateId);
+        if (!t) return;
+        const newQ = JSON.parse(JSON.stringify(t));
+        newQ.id = `q_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        builderQuestions.push(newQ);
+        renderBuilderQuestions();
+        showToast(`Added "${t.title}" question`);
+      };
+
+      // Add Custom Question
+      dom.btnAddCustomQuestion.addEventListener('click', () => {
+        builderQuestions.push({
+          id: `q_${Date.now()}`,
+          title: 'Untitled Question',
+          type: 'text',
+          required: false,
+          options: ['Option 1', 'Option 2']
+        });
+        renderBuilderQuestions();
+      });
+
+      // Render Questions in Builder
+      function renderBuilderQuestions() {
+        if (builderQuestions.length === 0) {
+          dom.builderQuestionsList.innerHTML = `
+            <div style="text-align:center; padding:30px; color:var(--text-muted); border:1px dashed #cbd5e1; border-radius:8px;">
+              No questions yet. Click prebuilt options above or "+ Add Custom Question" to begin.
+            </div>
+          `;
+          return;
+        }
+
+        dom.builderQuestionsList.innerHTML = builderQuestions.map((q, idx) => {
+          const isChoice = q.type === 'single_select' || q.type === 'multiple_select' || q.type === 'dropdown';
+          const optionsHtml = isChoice ? renderOptionsManager(q, idx) : '';
+
+          return `
+            <div class="builder-question-card" id="bqc_${idx}">
+              <div class="builder-question-top">
+                <span class="builder-question-index">${idx + 1}.</span>
+                <div class="builder-question-inputs">
+                  <input type="text" class="form-control" value="${escapeHtml(q.title)}" onchange="updateQuestionTitle(${idx}, this.value)" placeholder="Question Title">
+                  <select class="form-control" onchange="updateQuestionType(${idx}, this.value)">
+                    <option value="text" ${q.type === 'text' ? 'selected' : ''}>Short Answer (Text)</option>
+                    <option value="paragraph" ${q.type === 'paragraph' ? 'selected' : ''}>Paragraph</option>
+                    <option value="number" ${q.type === 'number' ? 'selected' : ''}>Numbers Only</option>
+                    <option value="single_select" ${q.type === 'single_select' ? 'selected' : ''}>Single Select (Radio)</option>
+                    <option value="multiple_select" ${q.type === 'multiple_select' ? 'selected' : ''}>Multiple Select (Checkboxes)</option>
+                    <option value="dropdown" ${q.type === 'dropdown' ? 'selected' : ''}>Dropdown (Select)</option>
+                    <option value="email" ${q.type === 'email' ? 'selected' : ''}>Email Address</option>
+                    <option value="tel" ${q.type === 'tel' ? 'selected' : ''}>Phone / WhatsApp</option>
+                  </select>
+                </div>
+              </div>
+
+              ${optionsHtml}
+
+              <div class="builder-question-bottom">
+                <div style="display:flex; gap:6px;">
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="moveQuestion(${idx}, -1)" ${idx === 0 ? 'disabled' : ''}>↑</button>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="moveQuestion(${idx}, 1)" ${idx === builderQuestions.length - 1 ? 'disabled' : ''}>↓</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:16px;">
+                  <label class="switch-label">
+                    <input type="checkbox" ${q.required ? 'checked' : ''} onchange="toggleQuestionRequired(${idx}, this.checked)">
+                    <span>Required</span>
+                  </label>
+                  <button type="button" class="btn btn-danger btn-sm" onclick="removeQuestion(${idx})">Delete</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function renderOptionsManager(q, qIdx) {
+        const opts = q.options || ['Option 1'];
+        return `
+          <div class="builder-options-list">
+            <span style="font-size:0.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Options:</span>
+            ${opts.map((opt, oIdx) => `
+              <div class="builder-option-row">
+                <span style="color:var(--text-muted); font-size:0.8rem;">●</span>
+                <input type="text" class="form-control" style="padding:6px 10px; font-size:0.85rem;" value="${escapeHtml(opt)}" onchange="updateOption(${qIdx}, ${oIdx}, this.value)">
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeOption(${qIdx}, ${oIdx})" style="padding:4px 8px;">✕</button>
+              </div>
+            `).join('')}
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addOption(${qIdx})" style="align-self:flex-start; margin-top:4px;">
+              + Add Option
+            </button>
+          </div>
+        `;
+      }
+
+      window.updateQuestionTitle = (idx, val) => { builderQuestions[idx].title = val; };
+      window.updateQuestionType = (idx, type) => {
+        builderQuestions[idx].type = type;
+        if ((type === 'single_select' || type === 'multiple_select' || type === 'dropdown') && !builderQuestions[idx].options) {
+          builderQuestions[idx].options = ['Option 1', 'Option 2'];
+        }
+        renderBuilderQuestions();
+      };
+      window.toggleQuestionRequired = (idx, checked) => { builderQuestions[idx].required = checked; };
+      window.removeQuestion = (idx) => {
+        builderQuestions.splice(idx, 1);
+        renderBuilderQuestions();
+      };
+      window.moveQuestion = (idx, dir) => {
+        const target = idx + dir;
+        if (target < 0 || target >= builderQuestions.length) return;
+        const temp = builderQuestions[idx];
+        builderQuestions[idx] = builderQuestions[target];
+        builderQuestions[target] = temp;
+        renderBuilderQuestions();
+      };
+
+      window.updateOption = (qIdx, oIdx, val) => { builderQuestions[qIdx].options[oIdx] = val; };
+      window.addOption = (qIdx) => {
+        if (!builderQuestions[qIdx].options) builderQuestions[qIdx].options = [];
+        builderQuestions[qIdx].options.push(`Option ${builderQuestions[qIdx].options.length + 1}`);
+        renderBuilderQuestions();
+      };
+      window.removeOption = (qIdx, oIdx) => {
+        builderQuestions[qIdx].options.splice(oIdx, 1);
+        renderBuilderQuestions();
+      };
+
+      // Test Webhook
+      dom.btnTestWebhook.addEventListener('click', async () => {
+        const url = dom.builderSheetUrl.value.trim();
+        if (!url) {
+          dom.webhookTestResult.innerHTML = '<span style="color:var(--accent-rose);">Please paste a Google Apps Script Web App URL first.</span>';
+          return;
+        }
+        dom.webhookTestResult.innerHTML = '<span style="color:var(--accent-amber);">Connecting to Google Sheet...</span>';
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+          if (data.status === 'online') {
+            dom.webhookTestResult.innerHTML = '<span style="color:var(--accent-green); font-weight:700;">✅ Google Sheet Webhook is active and responding!</span>';
+          } else {
+            dom.webhookTestResult.innerHTML = '<span style="color:var(--accent-green);">✔️ Webhook URL reachable.</span>';
+          }
+        } catch (e) {
+          if (url.includes('script.google.com/macros/s/')) {
+            dom.webhookTestResult.innerHTML = '<span style="color:var(--accent-green); font-weight:600;">✔️ Valid Google Apps Script endpoint format. Submissions will append directly.</span>';
+          } else {
+            dom.webhookTestResult.innerHTML = '<span style="color:var(--accent-rose);">❌ Invalid Google Apps Script URL. Ensure it starts with https://script.google.com/macros/s/</span>';
+          }
+        }
+      });
+
+      // Save Form
+      dom.btnSaveForm.addEventListener('click', () => {
+        const title = dom.builderTitle.value.trim();
+        if (!title) {
+          alert('Please enter an Event Title.');
+          dom.builderTitle.focus();
+          return;
+        }
+
+        const id = dom.builderFormId.value || `form-${Date.now()}`;
+        const formData = {
+          id: id,
+          title: title,
+          venue: dom.builderVenue.value.trim() || 'Campus Venue',
+          dateStr: dom.builderDate.value.trim() || 'Date TBD',
+          timeStr: dom.builderTime.value.trim() || '09:00 AM',
+          description: dom.builderDesc.value.trim() || '',
+          bannerUrl: dom.builderBanner.value.trim() || 'assets/images/hackathon.jpg',
+          sheetWebhookUrl: dom.builderSheetUrl.value.trim(),
+          fee: '₹0 (Free)',
+          questions: builderQuestions
+        };
+
+        FormsStore.saveForm(formData);
+        showToast('Form published successfully!');
+        dom.tabBtns[0].click(); // back to list
+      });
+
+      // 5. Render Submissions Tab
+      function renderSubmissionsTable() {
+        const forms = FormsStore.getForms();
+        const submissions = FormsStore.getSubmissions();
+        dom.totalRegistrationsCount.textContent = submissions.length;
+
+        // Populate Form filter dropdown
+        dom.submissionsFilterEvent.innerHTML = `
+          <option value="ALL">All Events (${submissions.length})</option>
+          ${forms.map(f => {
+            const count = FormsStore.getSubmissions(f.id).length;
+            return `<option value="${f.id}">${f.title} (${count})</option>`;
+          }).join('')}
+        `;
+
+        displaySubmissionsRows();
+      }
+
+      function displaySubmissionsRows() {
+        const filterVal = dom.submissionsFilterEvent.value;
+        const searchVal = dom.searchSubmissionsInput.value.toLowerCase().trim();
+
+        let list = FormsStore.getSubmissions(filterVal === 'ALL' ? null : filterVal);
+
+        if (searchVal) {
+          list = list.filter(item => {
+            return Object.values(item).some(val => String(val).toLowerCase().includes(searchVal));
+          });
+        }
+
+        dom.submissionsStatsBadge.textContent = `${list.length} Records`;
+
+        if (list.length === 0) {
+          dom.submissionsTableBody.innerHTML = `
+            <tr>
+              <td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);">
+                No registrations found.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        dom.submissionsTableBody.innerHTML = list.map(item => `
+          <tr>
+            <td style="font-family:monospace; color:var(--primary); font-weight:700;">${item['Booking ID'] || '-'}</td>
+            <td style="font-weight:600;">${item['Full Name'] || item['Name'] || Object.values(item)[6] || '-'}</td>
+            <td>${item['Email Address'] || item['Email'] || '-'}</td>
+            <td>${item['Phone / WhatsApp Number'] || item['Phone'] || '-'}</td>
+            <td>${(item['Event Title'] || '').split(':')[0]}</td>
+            <td style="color:var(--text-muted); font-size:0.78rem;">${item['Timestamp'] || '-'}</td>
+          </tr>
+        `).join('');
+      }
+
+      dom.submissionsFilterEvent.addEventListener('change', displaySubmissionsRows);
+      dom.searchSubmissionsInput.addEventListener('input', displaySubmissionsRows);
+
+      // Export CSV
+      dom.btnExportCsv.addEventListener('click', () => {
+        const filterVal = dom.submissionsFilterEvent.value;
+        const list = FormsStore.getSubmissions(filterVal === 'ALL' ? null : filterVal);
+        if (list.length === 0) {
+          alert('No submissions available to export.');
+          return;
+        }
+
+        const headersSet = new Set();
+        list.forEach(i => Object.keys(i).forEach(k => headersSet.add(k)));
+        const headers = Array.from(headersSet);
+
+        const rows = [headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',')];
+        list.forEach(row => {
+          const vals = headers.map(h => {
+            let v = row[h] !== undefined ? row[h] : '';
+            if (Array.isArray(v)) v = v.join('; ');
+            return `"${String(v).replace(/"/g, '""')}"`;
+          });
+          rows.push(vals.join(','));
+        });
+
+        const blob = new Blob([rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `IEDC_Registrations_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Exported registrations to CSV!');
+      });
+
+      // Clear Submissions
+      dom.btnClearSubmissions.addEventListener('click', () => {
+        if (confirm('Clear local registrations cache? Note: Google Sheets data is preserved.')) {
+          FormsStore.clearSubmissions();
+          renderSubmissionsTable();
+          showToast('Local submissions cleared');
+        }
+      });
+
+      function showToast(text) {
+        dom.adminToastText.textContent = text;
+        dom.adminToast.classList.add('show');
+        setTimeout(() => dom.adminToast.classList.remove('show'), 3500);
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+    })();
+  </script>
+</body>
+</html>

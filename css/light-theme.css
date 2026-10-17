@@ -1,0 +1,901 @@
+/* ==========================================================================
+   IEDC REGISTRATION FORMS - MINIMAL & CLEAN LIGHT DESIGN SYSTEM
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Clean Light Theme Palette */
+  --bg-page: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f1f5f9;
+  --bg-hover: #e2e8f0;
+
+  --border-color: #e2e8f0;
+  --border-focus: #4f46e5;
+
+  /* Primary Brand Accents */
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-light: #eef2ff;
+  --primary-focus-ring: rgba(79, 70, 229, 0.18);
+
+  --accent-rose: #e11d48;
+  --accent-rose-light: #ffe4e6;
+  --accent-green: #10b981;
+  --accent-green-light: #ecfdf5;
+  --accent-amber: #f59e0b;
+  --accent-amber-light: #fffbeb;
+
+  /* Typography */
+  --text-main: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-light: #94a3b8;
+
+  /* Geometry & Shadows */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-full: 9999px;
+
+  --shadow-subtle: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-elevated: 0 12px 24px -4px rgba(0, 0, 0, 0.08), 0 4px 8px -4px rgba(0, 0, 0, 0.04);
+  --shadow-modal: 0 20px 40px -8px rgba(15, 23, 42, 0.16);
+
+  --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-page);
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+.container-narrow {
+  width: 100%;
+  max-width: 740px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+.container-wide {
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+/* ==========================================================================
+   CLEAN LIGHT APP HEADER
+   ========================================================================== */
+.app-header {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.app-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  padding: 0 24px;
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--text-main);
+}
+
+.brand-badge {
+  background: var(--primary);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 1px 2px 0 rgba(79, 70, 229, 0.2);
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-subtle);
+  color: var(--text-main);
+  border-color: #cbd5e1;
+}
+
+.btn-danger {
+  background: var(--accent-rose-light);
+  color: var(--accent-rose);
+  border: 1px solid #fecdd3;
+}
+
+.btn-danger:hover {
+  background: #fecdd3;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  border-radius: var(--radius-sm);
+}
+
+/* ==========================================================================
+   GOOGLE FORMS STYLE FORM CONTAINER & CARDS
+   ========================================================================== */
+.form-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 24px 28px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-subtle);
+  position: relative;
+  transition: var(--transition);
+}
+
+.form-card:hover {
+  border-color: #cbd5e1;
+}
+
+/* Header Card with Top Accent Strip (Google Forms style) */
+.form-header-card {
+  border-top: 8px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: 0 0 28px 0;
+  overflow: hidden;
+}
+
+.form-header-banner {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.form-header-content {
+  padding: 24px 28px 0;
+}
+
+.form-meta-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+}
+
+.badge-free {
+  background: var(--accent-green-light);
+  color: var(--accent-green);
+  border: 1px solid #a7f3d0;
+}
+
+.badge-info {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.form-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.25;
+  margin-bottom: 8px;
+}
+
+.form-description {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+
+.form-event-details-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.form-event-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-event-detail-item svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.req-notice {
+  font-size: 0.82rem;
+  color: var(--accent-rose);
+  margin-top: 14px;
+  font-weight: 500;
+}
+
+/* Question Cards */
+.question-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 24px 28px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-subtle);
+  transition: var(--transition);
+}
+
+.question-card:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--primary-focus-ring);
+}
+
+.question-label {
+  display: block;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.question-label .req-star {
+  color: var(--accent-rose);
+  margin-left: 4px;
+  font-weight: 700;
+}
+
+.question-help {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+/* Inputs */
+.form-control {
+  width: 100%;
+  padding: 11px 14px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  color: var(--text-main);
+  transition: var(--transition);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-focus-ring);
+}
+
+.form-control::placeholder {
+  color: var(--text-light);
+}
+
+textarea.form-control {
+  min-height: 95px;
+  resize: vertical;
+}
+
+/* Radio & Checkbox Groups (Google Forms Clean Style) */
+.options-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  user-select: none;
+}
+
+.option-item:hover {
+  background: var(--bg-subtle);
+}
+
+.option-item input[type="radio"],
+.option-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.option-item span {
+  font-size: 0.92rem;
+  color: var(--text-main);
+}
+
+/* Submit Action Card */
+.submit-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 20px 28px;
+  box-shadow: var(--shadow-subtle);
+}
+
+.fee-summary {
+  display: flex;
+  flex-direction: column;
+}
+
+.fee-amount {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--accent-green);
+}
+
+.fee-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   CONFIRMATION / E-TICKET PASS (Clean Light BookMyShow Style)
+   ========================================================================== */
+.confirmation-container {
+  text-align: center;
+  padding: 30px 10px;
+}
+
+.success-icon-badge {
+  width: 64px;
+  height: 64px;
+  background: var(--accent-green-light);
+  color: var(--accent-green);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.ticket-light-pass {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated);
+  max-width: 480px;
+  margin: 24px auto;
+  overflow: hidden;
+  text-align: left;
+  position: relative;
+}
+
+.ticket-light-header {
+  background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+  color: #fff;
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ticket-pass-brand {
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+}
+
+.ticket-pass-badge {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.ticket-light-body {
+  padding: 24px 24px 18px;
+}
+
+.ticket-id-pill {
+  font-size: 0.8rem;
+  font-family: monospace;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.ticket-ev-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.3;
+  margin-bottom: 16px;
+}
+
+.ticket-details-table {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.ticket-detail-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.ticket-detail-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.ticket-detail-val {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* Light Perforated Tear Line */
+.ticket-tear-strip {
+  position: relative;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+
+.ticket-tear-strip::before, .ticket-tear-strip::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  background-color: var(--bg-page);
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  z-index: 2;
+}
+
+.ticket-tear-strip::before {
+  left: -12px;
+}
+
+.ticket-tear-strip::after {
+  right: -12px;
+}
+
+.ticket-tear-line {
+  width: 100%;
+  border-top: 2px dashed #cbd5e1;
+}
+
+.ticket-qr-strip {
+  background: #f8fafc;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.qr-canvas-holder {
+  background: #ffffff;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.qr-canvas-holder canvas, .qr-canvas-holder img {
+  width: 90px !important;
+  height: 90px !important;
+  display: block;
+}
+
+/* ==========================================================================
+   ADMIN LOGIN SCREEN (Minimal & Light)
+   ========================================================================= */
+.login-screen-wrapper {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 36px 32px;
+  box-shadow: var(--shadow-elevated);
+}
+
+.login-brand-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.login-brand-badge {
+  display: inline-block;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+.login-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.login-sub {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ==========================================================================
+   ADMIN DASHBOARD & FORM BUILDER (Google / Zoho Forms Style)
+   ========================================================================== */
+.admin-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px;
+}
+
+.admin-tab-btn {
+  padding: 8px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+}
+
+.admin-tab-btn:hover {
+  background: var(--bg-subtle);
+  color: var(--text-main);
+}
+
+.admin-tab-btn.active {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+/* Prebuilt Questions Quick Selector Grid */
+.prebuilt-picker-box {
+  background: var(--bg-subtle);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.prebuilt-picker-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prebuilt-chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-add-btn {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition);
+}
+
+.chip-add-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* Builder Question Card */
+.builder-question-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-subtle);
+  position: relative;
+  transition: var(--transition);
+}
+
+.builder-question-card:hover {
+  border-color: #cbd5e1;
+}
+
+.builder-question-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.builder-question-index {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  width: 24px;
+}
+
+.builder-question-inputs {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: 12px;
+  flex: 1;
+}
+
+@media (max-width: 640px) {
+  .builder-question-inputs {
+    grid-template-columns: 1fr;
+  }
+}
+
+.builder-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-left: 32px;
+}
+
+.builder-option-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.builder-question-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 12px;
+  margin-top: 14px;
+}
+
+/* Switch toggle */
+.switch-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.switch-label input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+}
+
+/* Admin Data Table */
+.data-table-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-subtle);
+}
+
+.data-table-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fafafa;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.clean-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.clean-table th {
+  background: #f8fafc;
+  padding: 12px 16px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.clean-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.clean-table tr:hover td {
+  background: #f8fafc;
+}
+
+/* Toast */
+.light-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-elevated);
+  font-size: 0.88rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 1000;
+  transform: translateY(80px);
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.light-toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background: #fff;
+  }
+  .app-header, .submit-card, .btn, .admin-tabs-bar {
+    display: none !important;
+  }
+  .ticket-light-pass {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+    margin: 0 auto !important;
+  }
+}
