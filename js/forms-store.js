@@ -9,7 +9,7 @@ const FormsStore = (function () {
 
   const FORMS_KEY = 'iedc_forms_db';
   const SUBMISSIONS_KEY = 'iedc_submissions_db';
-  const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwDVU0lxAQ2hcyPsojeX82wMTmb7ammt-8rxAJHkfwTevBftzI4-mKkZz-5DIZQICLaFw/exec';
+  const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxPCFnYDvDrivGyDOqRx8clG0_JQeyoc7Glr41iayQ9iWZUbeKd1woO2S6F5Shh1JF1yw/exec';
 
   // Prebuilt Question Templates Catalog (Google Forms / Zoho Forms style)
   const PREBUILT_TEMPLATES = [

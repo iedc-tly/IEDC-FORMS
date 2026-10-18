@@ -63,11 +63,11 @@ To receive registration submissions directly in a Google Sheet:
 8. Click **Deploy**, authorize your Google account, and copy the **Web app URL** (`https://script.google.com/macros/s/.../exec`).
 9. In `admin.html`, paste this URL into the **Google Sheets Webhook URL** field and click **Test Connection** & **Save**!
 
-### Active Deployment Details
-- **Deployment ID**: `AKfycbwDVU0lxAQ2hcyPsojeX82wMTmb7ammt-8rxAJHkfwTevBftzI4-mKkZz-5DIZQICLaFw`
-- **Web App URL**: `https://script.google.com/macros/s/AKfycbwDVU0lxAQ2hcyPsojeX82wMTmb7ammt-8rxAJHkfwTevBftzI4-mKkZz-5DIZQICLaFw/exec`
-- **Library URL**: `https://script.google.com/macros/library/d/1j_gpT2ydBMvNHFccKtuWIujKJO4JrJdZx5DfytR24QLsEeNnpFEJxbxr/1`
-- **Status**: Verified & Active (Tested row recording confirmed)
+### Active Deployment Details (Version 4)
+- **Deployment ID**: `AKfycbxPCFnYDvDrivGyDOqRx8clG0_JQeyoc7Glr41iayQ9iWZUbeKd1woO2S6F5Shh1JF1yw`
+- **Web App URL**: `https://script.google.com/macros/s/AKfycbxPCFnYDvDrivGyDOqRx8clG0_JQeyoc7Glr41iayQ9iWZUbeKd1woO2S6F5Shh1JF1yw/exec`
+- **Library URL**: `https://script.google.com/macros/library/d/1j_gpT2ydBMvNHFccKtuWIujKJO4JrJdZx5DfytR24QLsEeNnpFEJxbxr/4`
+- **Status**: Verified & Active (Automatic Dedicated Tab Creation Enabled)
 
 > **Auto-Column Creation**: When you add new questions to your form, the Google Apps Script automatically creates new header columns in row 1 of your Google Sheet!
 
