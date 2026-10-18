@@ -35,7 +35,7 @@ function doPost(e) {
   lock.tryLock(30000);
 
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
     
     // Parse incoming JSON payload
     var payload;
@@ -47,6 +47,26 @@ function doPost(e) {
       }
     } else {
       payload = e.parameter || {};
+    }
+
+    // Determine target sheet/tab based on Event Title (auto-creates a tab per event!)
+    var rawTitle = payload["Event Title"] || "";
+    var tabName = "Registrations";
+    if (rawTitle) {
+      // Clean invalid characters for sheet tab names (: \ / ? * [ ])
+      tabName = rawTitle.split(':')[0].replace(/[:\\/?*\[\]]/g, '').trim().substring(0, 30);
+    }
+    
+    var sheet = ss.getSheetByName(tabName);
+    if (!sheet) {
+      // If the default sheet is blank and named 'Sheet1', rename it; otherwise insert a new tab
+      var activeSheet = ss.getActiveSheet();
+      if (activeSheet && activeSheet.getLastRow() === 0 && (activeSheet.getName() === "Sheet1" || activeSheet.getName() === "Sheet 1")) {
+        sheet = activeSheet;
+        sheet.setName(tabName);
+      } else {
+        sheet = ss.insertSheet(tabName);
+      }
     }
 
     // Add standard server timestamp if not present
