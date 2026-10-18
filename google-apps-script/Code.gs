@@ -22,6 +22,31 @@
  */
 
 function doGet(e) {
+  var action = (e && e.parameter && e.parameter.action) || "";
+  var id = (e && e.parameter && (e.parameter.id || e.parameter.form)) || "";
+
+  // 1. Direct form lookup for short URLs (?form=new-event)
+  if (action === "get_form" && id) {
+    try {
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      var configSheet = ss.getSheetByName("_Forms_Config");
+      if (configSheet && configSheet.getLastRow() > 1) {
+        var rows = configSheet.getDataRange().getValues();
+        for (var i = 1; i < rows.length; i++) {
+          if (String(rows[i][1]) === String(id)) {
+            return ContentService.createTextOutput(String(rows[i][2]))
+              .setMimeType(ContentService.MimeType.JSON);
+          }
+        }
+      }
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ error: err.toString() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    return ContentService.createTextOutput(JSON.stringify({ error: "Form not found" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   return ContentService.createTextOutput(JSON.stringify({
     status: "online",
     message: "IEDC Event Registration API is active and ready to receive bookings!",
@@ -47,6 +72,42 @@ function doPost(e) {
       }
     } else {
       payload = e.parameter || {};
+    }
+
+    // Handle Form Configuration Sync (Enables ultra-short URLs like ?form=new-event)
+    if (payload.action === "save_form_config" && payload.form) {
+      var configSheet = ss.getSheetByName("_Forms_Config");
+      if (!configSheet) {
+        configSheet = ss.insertSheet("_Forms_Config");
+        configSheet.appendRow(["Updated", "Form ID", "Form JSON"]);
+        var hRange = configSheet.getRange(1, 1, 1, 3);
+        hRange.setFontWeight("bold");
+        hRange.setBackground("#111827");
+        hRange.setFontColor("#FFFFFF");
+      }
+      var lastRow = configSheet.getLastRow();
+      var foundRow = -1;
+      if (lastRow > 1) {
+        var idValues = configSheet.getRange(2, 2, lastRow - 1, 1).getValues();
+        for (var r = 0; r < idValues.length; r++) {
+          if (String(idValues[r][0]) === String(payload.form.id)) {
+            foundRow = r + 2;
+            break;
+          }
+        }
+      }
+      var nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || "GMT+5:30", "yyyy-MM-dd HH:mm:ss");
+      var jsonPayload = JSON.stringify(payload.form);
+      if (foundRow > 0) {
+        configSheet.getRange(foundRow, 1, 1, 3).setValues([[nowStr, payload.form.id, jsonPayload]]);
+      } else {
+        configSheet.appendRow([nowStr, payload.form.id, jsonPayload]);
+      }
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success",
+        message: "Form config synced to Google Sheet",
+        formId: payload.form.id
+      })).setMimeType(ContentService.MimeType.JSON);
     }
 
     // Determine target sheet/tab based on Event Title (auto-creates a tab per event!)

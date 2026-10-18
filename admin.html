@@ -72,13 +72,13 @@
       <!-- Tab Navigation Bar -->
       <div class="admin-tabs-bar">
         <button class="admin-tab-btn active" data-tab="tabForms">
-          📋 Event Forms (<span id="totalFormsCount">0</span>)
+           IEDC Forms (<span id="totalFormsCount">0</span>)
         </button>
         <button class="admin-tab-btn" data-tab="tabBuilder">
-          ➕ Create / Edit Form
+           Create / Edit Form
         </button>
         <button class="admin-tab-btn" data-tab="tabSubmissions">
-          📊 Registrations (<span id="totalRegistrationsCount">0</span>)
+           Registrations (<span id="totalRegistrationsCount">0</span>)
         </button>
       </div>
 
@@ -121,28 +121,32 @@
               1. Event Information & Google Sheets Link
             </h3>
 
-            <input type="hidden" id="builderFormId">
-
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+            <div style="display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:16px;">
               <div>
                 <label class="question-label" for="builderTitle">Event Title <span class="req-star">*</span></label>
                 <input class="form-control" type="text" id="builderTitle" placeholder="e.g., HackNova 2026 Hackathon" required>
               </div>
               <div>
-                <label class="question-label" for="builderVenue">Venue / Location <span class="req-star">*</span></label>
-                <input class="form-control" type="text" id="builderVenue" placeholder="e.g., Campus Auditorium or Google Meet" required>
+                <label class="question-label" for="builderFormId">Short Link Slug <span class="req-star">*</span></label>
+                <input class="form-control" type="text" id="builderFormId" placeholder="e.g., hacknova-2026" required>
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Link: ?form=<b><span id="builderSlugPreview">...</span></b></div>
               </div>
             </div>
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
               <div>
+                <label class="question-label" for="builderVenue">Venue / Location <span class="req-star">*</span></label>
+                <input class="form-control" type="text" id="builderVenue" placeholder="e.g., Campus Auditorium or Google Meet" required>
+              </div>
+              <div>
                 <label class="question-label" for="builderDate">Event Date <span class="req-star">*</span></label>
                 <input class="form-control" type="text" id="builderDate" placeholder="e.g., Saturday, Nov 14, 2026">
               </div>
-              <div>
-                <label class="question-label" for="builderTime">Event Time <span class="req-star">*</span></label>
-                <input class="form-control" type="text" id="builderTime" placeholder="e.g., 09:00 AM - 05:00 PM IST">
-              </div>
+            </div>
+
+            <div style="margin-bottom:16px;">
+              <label class="question-label" for="builderTime">Event Time <span class="req-star">*</span></label>
+              <input class="form-control" type="text" id="builderTime" placeholder="e.g., 09:00 AM - 05:00 PM IST">
             </div>
 
             <div style="margin-bottom:16px;">
@@ -165,7 +169,7 @@
             <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:var(--radius-sm); padding:16px; margin-top:10px;">
               <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
                 <label class="question-label" for="builderSheetUrl" style="margin-bottom:0; color:var(--primary); font-weight:700;">
-                  📊 Google Sheets Webhook URL
+                   Google Sheets Webhook URL
                 </label>
                 <button type="button" class="btn btn-secondary btn-sm" id="btnTestWebhook">Test Connection</button>
               </div>
@@ -174,7 +178,7 @@
 
               <details style="margin-top:10px; font-size:0.84rem; color:var(--text-secondary);">
                 <summary style="cursor:pointer; font-weight:600; color:var(--primary);">
-                  👉 2-Minute Google Sheets Setup Guide (Click to expand)
+                   2-Minute Google Sheets Setup Guide (Click to expand)
                 </summary>
                 <div style="margin-top:8px; line-height:1.6; background:#fff; padding:12px; border-radius:6px; border:1px solid #e2e8f0;">
                   1. Open <a href="https://sheets.new" target="_blank" style="text-decoration:underline; color:var(--primary);">sheets.new</a> to create a Google Sheet.<br>
@@ -199,7 +203,7 @@
             <!-- Prebuilt Quick Add Bar -->
             <div class="prebuilt-picker-box">
               <div class="prebuilt-picker-title">
-                ⚡ 1-Click Prebuilt Questions (Google & Zoho Forms Presets):
+                 1-Click Prebuilt Questions (Google & Zoho Forms Presets):
               </div>
               <div class="prebuilt-chips-grid" id="prebuiltChips">
                 <!-- Injected dynamically -->
@@ -233,7 +237,7 @@
               <option value="ALL">All Events</option>
             </select>
             <button class="btn btn-primary btn-sm" id="btnExportCsv">
-              📥 Export to CSV / Excel
+               Export to CSV / Excel
             </button>
             <button class="btn btn-danger btn-sm" id="btnClearSubmissions">
               Clear Cache
@@ -266,7 +270,55 @@
         </div>
       </div>
     </div>
-  </main>
+  <!-- Share Links Modal -->
+  <div id="shareModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+    <div class="form-card" style="max-width:520px; width:100%; border-radius:12px; box-shadow:var(--shadow-modal); position:relative; max-height:90vh; overflow-y:auto; margin:auto;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <h3 style="font-size:1.2rem; font-weight:800; color:var(--text-main);" id="shareModalTitle">Share Event Form</h3>
+        <button type="button" onclick="closeShareModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); line-height:1;">&times;</button>
+      </div>
+
+      <!-- Option 1: Clean Short Link -->
+      <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:14px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+          <span style="font-size:0.85rem; font-weight:700; color:var(--primary);">⚡ Short Clean Link (Recommended)</span>
+          <span class="pill-badge" style="background:#e0e7ff; color:#4338ca; font-size:0.72rem; padding:2px 6px;">Compact</span>
+        </div>
+        <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:8px;">
+          Best for sharing on WhatsApp, Telegram, Instagram Bio, Posters, and SMS.
+        </p>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="shareShortLinkInput" readonly class="form-control" style="font-size:0.82rem; font-family:monospace; background:#fff;">
+          <button type="button" class="btn btn-primary btn-sm" onclick="copyModalShortLink()" style="white-space:nowrap;">
+            📋 Copy
+          </button>
+        </div>
+      </div>
+
+      <!-- Option 2: Compact Universal Link (Self-Contained) -->
+      <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:14px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+          <span style="font-size:0.85rem; font-weight:700; color:var(--text-main);">🌐 Universal Direct Link</span>
+          <span class="pill-badge" style="background:#f1f5f9; color:var(--text-secondary); font-size:0.72rem; padding:2px 6px;">Self-Contained</span>
+        </div>
+        <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:8px;">
+          Encodes questions directly in URL. Works everywhere instantly even without Google Sheets sync.
+        </p>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="shareUniversalLinkInput" readonly class="form-control" style="font-size:0.82rem; font-family:monospace; background:#fff;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="copyModalUniversalLink()" style="white-space:nowrap;">
+            📋 Copy
+          </button>
+        </div>
+      </div>
+
+      <div style="text-align:center; padding-top:6px;">
+        <button type="button" class="btn btn-secondary" onclick="closeShareModal()" style="width:100%;">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast Notification -->
   <div class="light-toast" id="adminToast">
@@ -311,6 +363,7 @@
         // Tab 2: Builder
         builderHeading: document.getElementById('builderHeading'),
         builderFormId: document.getElementById('builderFormId'),
+        builderSlugPreview: document.getElementById('builderSlugPreview'),
         builderTitle: document.getElementById('builderTitle'),
         builderVenue: document.getElementById('builderVenue'),
         builderDate: document.getElementById('builderDate'),
@@ -429,11 +482,14 @@
               </div>
 
               <div style="border-top:1px solid var(--border-color); padding-top:14px; display:flex; flex-wrap:wrap; gap:8px;">
-                <button class="btn btn-primary btn-sm" onclick="copyFormLink('${f.id}')">
-                  📋 Copy Link
+                <button class="btn btn-primary btn-sm" onclick="copyShortLink('${f.id}')" title="Copy clean short link">
+                  📋 Copy Short Link
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="openShareModal('${f.id}')" title="View all link options">
+                  🔗 Share Options
                 </button>
                 <a href="${formUrl}" target="_blank" class="btn btn-secondary btn-sm">
-                  👁️ Open Form
+                  👁️ Open
                 </a>
                 <button class="btn btn-secondary btn-sm" onclick="editForm('${f.id}')">
                   ✏️ Edit
@@ -475,13 +531,57 @@
         });
       }
 
-      window.copyFormLink = function (id) {
+      window.copyShortLink = function (id) {
         const form = FormsStore.getFormById(id);
-        const url = FormsStore.getShareableUrl(form || { id: id });
+        const url = FormsStore.getShortUrl(form || id);
         copyToClipboard(url).then(() => {
-          showToast('Shareable form link copied to clipboard!');
+          showToast('⚡ Clean short link copied to clipboard!');
         }).catch(() => {
-          window.prompt('Copy this shareable link:', url);
+          window.prompt('Copy this short link:', url);
+        });
+      };
+
+      window.copyFormLink = function (id) {
+        window.copyShortLink(id);
+      };
+
+      window.openShareModal = function (id) {
+        const form = FormsStore.getFormById(id);
+        if (!form) return;
+        const modal = document.getElementById('shareModal');
+        const title = document.getElementById('shareModalTitle');
+        const shortInput = document.getElementById('shareShortLinkInput');
+        const universalInput = document.getElementById('shareUniversalLinkInput');
+
+        if (title) title.textContent = `Share: ${form.title}`;
+        if (shortInput) shortInput.value = FormsStore.getShortUrl(form);
+        if (universalInput) universalInput.value = FormsStore.getShareableUrl(form);
+
+        if (modal) modal.style.display = 'flex';
+      };
+
+      window.closeShareModal = function () {
+        const modal = document.getElementById('shareModal');
+        if (modal) modal.style.display = 'none';
+      };
+
+      window.copyModalShortLink = function () {
+        const shortInput = document.getElementById('shareShortLinkInput');
+        if (!shortInput) return;
+        copyToClipboard(shortInput.value).then(() => {
+          showToast('⚡ Short link copied to clipboard!');
+        }).catch(() => {
+          window.prompt('Copy short link:', shortInput.value);
+        });
+      };
+
+      window.copyModalUniversalLink = function () {
+        const universalInput = document.getElementById('shareUniversalLinkInput');
+        if (!universalInput) return;
+        copyToClipboard(universalInput.value).then(() => {
+          showToast('🌐 Universal link copied to clipboard!');
+        }).catch(() => {
+          window.prompt('Copy universal link:', universalInput.value);
         });
       };
 
@@ -491,6 +591,9 @@
         activeEditingFormId = id;
         dom.builderHeading.textContent = `Edit Form: ${form.title}`;
         dom.builderFormId.value = form.id;
+        if (dom.builderSlugPreview) {
+          dom.builderSlugPreview.textContent = FormsStore.getShortUrl(form.id);
+        }
         dom.builderTitle.value = form.title;
         dom.builderVenue.value = form.venue || '';
         dom.builderDate.value = form.dateStr || '';
@@ -527,7 +630,11 @@
       function resetBuilderForm() {
         activeEditingFormId = null;
         dom.builderHeading.textContent = 'Create Event Form';
-        dom.builderFormId.value = `form-${Date.now()}`;
+        const defaultSlug = 'new-event';
+        dom.builderFormId.value = defaultSlug;
+        if (dom.builderSlugPreview) {
+          dom.builderSlugPreview.textContent = FormsStore.getShortUrl(defaultSlug);
+        }
         dom.builderTitle.value = '';
         dom.builderVenue.value = '';
         dom.builderDate.value = '';
@@ -708,6 +815,24 @@
         }
       });
 
+      // Live Slug Generation & Preview
+      dom.builderTitle.addEventListener('input', () => {
+        if (!activeEditingFormId) {
+          const slug = FormsStore.slugify(dom.builderTitle.value) || 'new-event';
+          dom.builderFormId.value = slug;
+          if (dom.builderSlugPreview) {
+            dom.builderSlugPreview.textContent = FormsStore.getShortUrl(slug);
+          }
+        }
+      });
+
+      dom.builderFormId.addEventListener('input', () => {
+        const clean = FormsStore.slugify(dom.builderFormId.value);
+        if (dom.builderSlugPreview) {
+          dom.builderSlugPreview.textContent = FormsStore.getShortUrl(clean || 'event-slug');
+        }
+      });
+
       // Save Form
       dom.btnSaveForm.addEventListener('click', () => {
         const title = dom.builderTitle.value.trim();
@@ -717,7 +842,8 @@
           return;
         }
 
-        const id = dom.builderFormId.value || `form-${Date.now()}`;
+        const rawId = dom.builderFormId.value.trim() || FormsStore.slugify(title) || `form-${Date.now()}`;
+        const id = FormsStore.slugify(rawId) || rawId;
         const formData = {
           id: id,
           title: title,
