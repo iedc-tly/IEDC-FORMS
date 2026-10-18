@@ -225,15 +225,13 @@ button {
 .form-banner-wrapper {
   position: relative;
   width: 100%;
-  height: 200px;
   overflow: hidden;
-  background: #f1f5f9;
+  background: #f8fafc;
 }
 
 .form-header-banner {
   width: 100%;
-  height: 200px;
-  object-fit: cover;
+  height: auto;
   display: block;
 }
 
@@ -1329,17 +1327,21 @@ textarea.form-control {
     margin-bottom: 12px;
   }
 
-  /* Form Header Banner - Responsive Aspect Ratio */
+  /* Form Header Banner - Full Poster Display (Never Cut Off) */
   .form-banner-wrapper {
+    width: 100%;
     height: auto;
-    aspect-ratio: 16 / 9;
-    max-height: 220px;
-    min-height: 130px;
+    aspect-ratio: auto;
+    max-height: none;
+    min-height: 0;
+    background: transparent;
   }
   .form-header-banner {
-    height: 100%;
     width: 100%;
-    object-fit: cover;
+    height: auto;
+    max-height: none;
+    object-fit: contain;
+    display: block;
   }
 
   .form-header-content {
