@@ -228,8 +228,23 @@
             </div>
 
             <div style="margin-bottom:20px;">
-              <label class="question-label" for="builderBanner">Banner Image URL</label>
-              <input class="form-control" type="text" id="builderBanner" placeholder="assets/images/hackathon.jpg">
+              <label class="question-label" for="builderBanner">
+                Banner Image <span style="font-size:0.78rem; font-weight:normal; color:var(--text-muted);">(Choose from assets or enter URL)</span>
+              </label>
+
+              <!-- Asset Choice Cards Grid -->
+              <div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px;">
+                Available Images in <code>assets/images/</code>:
+              </div>
+              <div id="adminAssetBannerGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;"></div>
+
+              <!-- Manual / Custom input -->
+              <input class="form-control" type="text" id="builderBanner" placeholder="assets/images/AnoopAmbika (1).jpeg">
+
+              <!-- Live Banner Preview -->
+              <div id="builderBannerPreviewBox" style="margin-top:10px; border-radius:6px; overflow:hidden; border:1px solid var(--border-color); max-height:120px; background:#f1f5f9; display:flex; align-items:center; justify-content:center;">
+                <img id="builderBannerPreviewImg" src="assets/images/AnoopAmbika (1).jpeg" alt="Banner Preview" style="width:100%; height:120px; object-fit:cover;" onerror="this.src='assets/images/AnoopAmbika (1).jpeg'">
+              </div>
             </div>
 
             <!-- Google Sheets Integration Box -->
@@ -240,7 +255,7 @@
                 </label>
                 <button type="button" class="btn btn-secondary btn-sm" id="btnTestWebhook">Test Connection</button>
               </div>
-              <input class="form-control" type="url" id="builderSheetUrl" value="https://script.google.com/macros/s/AKfycbxPCFnYDvDrivGyDOqRx8clG0_JQeyoc7Glr41iayQ9iWZUbeKd1woO2S6F5Shh1JF1yw/exec" placeholder="https://script.google.com/macros/s/AKfycbx.../exec">
+              <input class="form-control" type="url" id="builderSheetUrl" value="https://script.google.com/macros/s/AKfycbzVuHuWV2-v5og7iw-hKcMgY3rqkfylUCalzkVI5WbvSv3nbqLoo_tgB_FimMtnPkrsMg/exec" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
               <div id="webhookTestResult" style="font-size:0.82rem; margin-top:6px;"></div>
 
               <details style="margin-top:10px; font-size:0.84rem; color:var(--text-secondary);">
@@ -560,6 +575,7 @@
       function initDashboard() {
         renderFormsList();
         renderPrebuiltChips();
+        renderAdminAssetBanners();
         renderSubmissionsTable();
       }
 
@@ -716,7 +732,8 @@
         dom.builderDate.value = form.dateStr || '';
         dom.builderTime.value = form.timeStr || '';
         dom.builderDesc.value = form.description || '';
-        dom.builderBanner.value = form.bannerUrl || '';
+        dom.builderBanner.value = form.bannerUrl || 'assets/images/AnoopAmbika (1).jpeg';
+        renderAdminAssetBanners();
         dom.builderSheetUrl.value = form.sheetWebhookUrl || '';
 
         // Load pricing state
@@ -739,6 +756,45 @@
         // Switch to Builder Tab
         dom.tabBtns[1].click();
       };
+
+      function renderAdminAssetBanners() {
+        const grid = document.getElementById('adminAssetBannerGrid');
+        if (!grid) return;
+        const assets = (FormsStore.AVAILABLE_BANNER_ASSETS && FormsStore.AVAILABLE_BANNER_ASSETS.length) ? FormsStore.AVAILABLE_BANNER_ASSETS : [
+          { id: 'anoop-1', title: 'Keynote Session (Anoop Ambika - 1)', url: 'assets/images/AnoopAmbika (1).jpeg' },
+          { id: 'anoop-2', title: 'Leadership Conclave (Anoop Ambika - 2)', url: 'assets/images/AnoopAmbika (2).jpeg' }
+        ];
+
+        const curVal = dom.builderBanner.value.trim() || 'assets/images/AnoopAmbika (1).jpeg';
+
+        grid.innerHTML = assets.map(a => {
+          const isActive = curVal === a.url;
+          return `
+            <div class="banner-asset-card ${isActive ? 'active' : ''}" onclick="selectAdminAssetBanner('${a.url}')">
+              <img src="${a.url}" class="banner-asset-thumb" alt="${a.title}">
+              <div style="padding:6px 8px;">
+                <div style="font-size:0.75rem; font-weight:700; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${a.title}</div>
+                <div style="font-size:0.68rem; color:${isActive ? 'var(--primary)' : 'var(--text-muted)'}; margin-top:2px;">${isActive ? '✓ Selected' : 'Select'}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        const previewImg = document.getElementById('builderBannerPreviewImg');
+        if (previewImg) previewImg.src = curVal;
+      }
+
+      window.selectAdminAssetBanner = function (url) {
+        dom.builderBanner.value = url;
+        renderAdminAssetBanners();
+      };
+
+      dom.builderBanner.addEventListener('input', () => {
+        const val = dom.builderBanner.value.trim() || 'assets/images/AnoopAmbika (1).jpeg';
+        const previewImg = document.getElementById('builderBannerPreviewImg');
+        if (previewImg) previewImg.src = val;
+        renderAdminAssetBanners();
+      });
 
       window.deleteFormHandler = function (id) {
         if (confirm('Are you sure you want to delete this form? Attendee registrations will remain saved.')) {
@@ -772,8 +828,9 @@
         dom.builderDate.value = '';
         dom.builderTime.value = '';
         dom.builderDesc.value = '';
-        dom.builderBanner.value = 'assets/images/hackathon.jpg';
-        dom.builderSheetUrl.value = 'https://script.google.com/macros/s/AKfycbxPCFnYDvDrivGyDOqRx8clG0_JQeyoc7Glr41iayQ9iWZUbeKd1woO2S6F5Shh1JF1yw/exec';
+        dom.builderBanner.value = 'assets/images/AnoopAmbika (1).jpeg';
+        renderAdminAssetBanners();
+        dom.builderSheetUrl.value = 'https://script.google.com/macros/s/AKfycbzVuHuWV2-v5og7iw-hKcMgY3rqkfylUCalzkVI5WbvSv3nbqLoo_tgB_FimMtnPkrsMg/exec';
         
         // Reset Pricing
         setBuilderPricingType('free');
@@ -1093,7 +1150,7 @@
           dateStr: dom.builderDate.value.trim() || 'Date TBD',
           timeStr: dom.builderTime.value.trim() || '09:00 AM',
           description: dom.builderDesc.value.trim() || '',
-          bannerUrl: dom.builderBanner.value.trim() || 'assets/images/hackathon.jpg',
+          bannerUrl: dom.builderBanner.value.trim() || 'assets/images/AnoopAmbika (1).jpeg',
           sheetWebhookUrl: dom.builderSheetUrl.value.trim(),
           questions: builderQuestions
         };

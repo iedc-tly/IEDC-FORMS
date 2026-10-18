@@ -9,7 +9,7 @@ const FormsStore = (function () {
 
   const FORMS_KEY = 'iedc_forms_db';
   const SUBMISSIONS_KEY = 'iedc_submissions_db';
-  const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxPCFnYDvDrivGyDOqRx8clG0_JQeyoc7Glr41iayQ9iWZUbeKd1woO2S6F5Shh1JF1yw/exec';
+  const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzVuHuWV2-v5og7iw-hKcMgY3rqkfylUCalzkVI5WbvSv3nbqLoo_tgB_FimMtnPkrsMg/exec';
 
   // Prebuilt Question Templates Catalog (Google Forms / Zoho Forms style)
   const PREBUILT_TEMPLATES = [
@@ -144,7 +144,7 @@ const FormsStore = (function () {
       id: "hacknova-2026",
       title: "HACKNOVA 2026: 36-Hour National Hackathon",
       description: "Join the most anticipated student tech sprint of the year! 36 hours of coding, building, and mentorship. Free entry, complimentary meals, certificates, and $50k prize pool.",
-      bannerUrl: "assets/images/hackathon.jpg",
+      bannerUrl: "assets/images/AnoopAmbika (1).jpeg",
       dateStr: "Fri, Nov 14 – Sun, Nov 16, 2026",
       timeStr: "09:00 AM IST onwards",
       venue: "Innovation Hub & Convention Center, Campus North Block",
@@ -232,7 +232,7 @@ const FormsStore = (function () {
       id: "startup-summit-2026",
       title: "Futuristic Startup Summit & AI Conclave",
       description: "Meet student founders, angel investors, and AI leaders. Pitch your startup, attend keynote fireside chats, and explore future technologies. 100% Free Delegate Pass.",
-      bannerUrl: "assets/images/startup_conclave.jpg",
+      bannerUrl: "assets/images/AnoopAmbika (2).jpeg",
       dateStr: "Saturday, Dec 05, 2026",
       timeStr: "09:30 AM - 05:30 PM IST",
       venue: "Auditorium Grand Hall, Senate Complex",
@@ -293,6 +293,68 @@ const FormsStore = (function () {
           required: false
         }
       ]
+    },
+    {
+      id: "interactive-session",
+      title: "INTERACTIVE SESSION",
+      description: "Join the interactive session at College Auditorium. Engage with mentors, ask questions, and explore exciting campus initiatives.",
+      bannerUrl: "assets/images/AnoopAmbika (1).jpeg",
+      dateStr: "WEDNESDAY , OCTOBER 28 , 2026",
+      timeStr: "10:00 Am to 12:00 Pm",
+      venue: "COLLEGE AUDITORIUM",
+      sheetWebhookUrl: DEFAULT_WEBHOOK_URL,
+      category: "Campus Event",
+      pricingType: "free",
+      fee: "₹0 (Free Entry)",
+      paymentQr: "",
+      paymentInstructions: "",
+      questions: [
+        {
+          id: "q_name",
+          title: "Full Name",
+          type: "text",
+          required: true
+        },
+        {
+          id: "q_email",
+          title: "Email Address",
+          type: "email",
+          required: true
+        },
+        {
+          id: "q_phone",
+          title: "Phone / WhatsApp Number",
+          type: "tel",
+          required: true
+        },
+        {
+          id: "q_college",
+          title: "College",
+          type: "text",
+          required: true
+        },
+        {
+          id: "q_role",
+          title: "What is your role ",
+          type: "dropdown",
+          required: true,
+          options: ["Student", "Faculty", "Nodal Officer", "Others"]
+        },
+        {
+          id: "q_branch",
+          title: "Branch",
+          type: "dropdown",
+          required: true,
+          options: ["EC", "CS", "IT", "CIVIL", "MECH", "EEE", "ECS", "MBA / MCA"]
+        },
+        {
+          id: "q_semester",
+          title: "Semester",
+          type: "dropdown",
+          required: true,
+          options: ["S1", "S2", "S5", "S7"]
+        }
+      ]
     }
   ];
 
@@ -305,8 +367,18 @@ const FormsStore = (function () {
       if (stored) {
         const parsed = JSON.parse(stored);
         let updated = false;
+
+        // Ensure default forms exist
+        if (!parsed.some(f => f.id === 'interactive-session')) {
+          const interactiveForm = INITIAL_FORMS.find(f => f.id === 'interactive-session');
+          if (interactiveForm) {
+            parsed.push(interactiveForm);
+            updated = true;
+          }
+        }
+
         parsed.forEach(f => {
-          if (!f.sheetWebhookUrl) {
+          if (!f.sheetWebhookUrl || f.sheetWebhookUrl.includes('AKfycbxPCFnYDvDrivGyDOqRx8clG0_JQeyoc7Glr41iayQ9iWZUbeKd1woO2S6F5Shh1JF1yw')) {
             f.sheetWebhookUrl = DEFAULT_WEBHOOK_URL;
             updated = true;
           }
@@ -320,6 +392,10 @@ const FormsStore = (function () {
           }
           if (!f.fee) {
             f.fee = '₹0 (Free Entry)';
+            updated = true;
+          }
+          if (!f.bannerUrl || f.bannerUrl.includes('hackathon.jpg') || f.bannerUrl.includes('startup_conclave.jpg')) {
+            f.bannerUrl = f.id === 'startup-summit-2026' ? 'assets/images/AnoopAmbika (2).jpeg' : 'assets/images/AnoopAmbika (1).jpeg';
             updated = true;
           }
         });
@@ -339,7 +415,20 @@ const FormsStore = (function () {
     return forms.find(f => f.id === id) || null;
   }
 
-  const DEFAULT_BANNER_URL = 'assets/images/hackathon.jpg';
+  const AVAILABLE_BANNER_ASSETS = [
+    {
+      id: "anoop-1",
+      title: "Keynote Session (Anoop Ambika - 1)",
+      url: "assets/images/AnoopAmbika (1).jpeg"
+    },
+    {
+      id: "anoop-2",
+      title: "Leadership Conclave (Anoop Ambika - 2)",
+      url: "assets/images/AnoopAmbika (2).jpeg"
+    }
+  ];
+
+  const DEFAULT_BANNER_URL = 'assets/images/AnoopAmbika (1).jpeg';
 
   function slugify(text) {
     return String(text || '')
@@ -575,7 +664,16 @@ const FormsStore = (function () {
       const fetchUrl = `${url}?action=get_form&id=${encodeURIComponent(formId)}`;
       const res = await fetch(fetchUrl);
       if (res.ok) {
-        const data = await res.json();
+        const text = await res.text();
+        let data = null;
+        try {
+          data = JSON.parse(text);
+          if (typeof data === 'string') {
+            data = JSON.parse(data);
+          }
+        } catch (jsonErr) {
+          console.warn("Could not parse cloud form response:", jsonErr);
+        }
         if (data && data.title && !data.error) {
           return data;
         }
@@ -647,22 +745,25 @@ const FormsStore = (function () {
       }
     }
 
-    // 3. Dispatch to Google Apps Script Webhook (if provided)
+    // 3. Dispatch to Google Apps Script Webhook asynchronously (Non-blocking for instant attendee confirmation)
     const webhookUrl = form.sheetWebhookUrl || localStorage.getItem('iedc_global_webhook_url') || DEFAULT_WEBHOOK_URL;
+    let syncPromise = null;
     if (webhookUrl && webhookUrl.startsWith('http')) {
-      try {
-        await fetch(webhookUrl, {
-          method: 'POST',
-          mode: 'no-cors', // Standard bypass for Google Apps Script Web App
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-          },
-          body: JSON.stringify(sheetPayload)
-        });
-      } catch (err) {
+      syncPromise = fetch(webhookUrl, {
+        method: 'POST',
+        mode: 'no-cors', // Standard bypass for Google Apps Script Web App
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify(sheetPayload)
+      }).catch(err => {
         console.warn("Google Sheet webhook POST notice:", err);
-      }
+        return false;
+      });
     }
+
+    // Attach promise to record for real-time status reflection if needed
+    record._syncPromise = syncPromise;
 
     return record;
   }
@@ -686,6 +787,8 @@ const FormsStore = (function () {
     syncFormToCloud,
     fetchFormFromCloud,
     slugify,
+    AVAILABLE_BANNER_ASSETS,
+    DEFAULT_BANNER_URL,
     DEFAULT_WEBHOOK_URL,
     PREBUILT_TEMPLATES
   };

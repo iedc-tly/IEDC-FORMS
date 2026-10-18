@@ -17,7 +17,7 @@ const APP_CONFIG = {
 
   // Google Apps Script Web App URL
   // Deployed from Code.gs
-  googleSheetWebhookUrl: "https://script.google.com/macros/s/AKfycbxPCFnYDvDrivGyDOqRx8clG0_JQeyoc7Glr41iayQ9iWZUbeKd1woO2S6F5Shh1JF1yw/exec",
+  googleSheetWebhookUrl: "https://script.google.com/macros/s/AKfycbzVuHuWV2-v5og7iw-hKcMgY3rqkfylUCalzkVI5WbvSv3nbqLoo_tgB_FimMtnPkrsMg/exec",
 
   // Pre-built questions catalog (like Google Forms / Zoho Forms)
   prebuiltQuestions: [

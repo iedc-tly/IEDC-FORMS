@@ -17,6 +17,27 @@
  * ==========================================================================
  */
 
+// ==========================================================================
+// CONFIGURATION (OPTIONAL)
+// If this script was opened from your Google Sheet (Extensions -> Apps Script),
+// it automatically connects to that sheet.
+// If your script is standalone or you ever see "Document is missing",
+// paste your Google Sheet URL or ID between the quotes below:
+// ==========================================================================
+var SPREADSHEET_ID_OR_URL = "";
+
+function getSpreadsheet() {
+  if (SPREADSHEET_ID_OR_URL && SPREADSHEET_ID_OR_URL.trim()) {
+    var val = SPREADSHEET_ID_OR_URL.trim();
+    if (val.indexOf("http") === 0) {
+      return SpreadsheetApp.openByUrl(val);
+    } else {
+      return SpreadsheetApp.openById(val);
+    }
+  }
+  return SpreadsheetApp.getActiveSpreadsheet();
+}
+
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) || "";
   var id = (e && e.parameter && (e.parameter.id || e.parameter.form)) || "";
@@ -24,14 +45,24 @@ function doGet(e) {
   // 1. Direct form lookup for short URLs (?form=new-event)
   if (action === "get_form" && id) {
     try {
-      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      var ss = getSpreadsheet();
       var configSheet = ss.getSheetByName("_Forms_Config");
       if (configSheet && configSheet.getLastRow() > 1) {
         var rows = configSheet.getDataRange().getValues();
+        var targetId = String(id).toLowerCase().trim();
         for (var i = 1; i < rows.length; i++) {
-          if (String(rows[i][1]) === String(id)) {
-            return ContentService.createTextOutput(String(rows[i][2]))
-              .setMimeType(ContentService.MimeType.JSON);
+          if (String(rows[i][1]).toLowerCase().trim() === targetId) {
+            // Locate column holding the JSON payload (col 3 in 4-column schema, col 2 in 3-column schema)
+            var jsonStr = "";
+            if (rows[i][3] && String(rows[i][3]).indexOf('{') !== -1) {
+              jsonStr = String(rows[i][3]);
+            } else if (rows[i][2] && String(rows[i][2]).indexOf('{') !== -1) {
+              jsonStr = String(rows[i][2]);
+            }
+            if (jsonStr) {
+              return ContentService.createTextOutput(jsonStr)
+                .setMimeType(ContentService.MimeType.JSON);
+            }
           }
         }
       }
@@ -52,11 +83,11 @@ function doGet(e) {
 
 function doPost(e) {
   var lock = LockService.getScriptLock();
-  // Wait up to 30 seconds for concurrent writes
-  lock.tryLock(30000);
+  // Fast lock timeout (10 seconds max wait)
+  lock.tryLock(10000);
 
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getSpreadsheet();
     
     // Parse incoming JSON payload
     var payload;
@@ -86,15 +117,15 @@ function doPost(e) {
       var formId = formObj.id || payload.formId || "event-" + Date.now();
       var eventTitle = formObj.title || payload.title || "";
 
-      // A. Sync form JSON into _Forms_Config tab (for short URL lookups)
+      // A. Fast sync form JSON into _Forms_Config tab (for short URL lookups)
       var configSheet = ss.getSheetByName("_Forms_Config");
       if (!configSheet) {
         configSheet = ss.insertSheet("_Forms_Config");
         configSheet.appendRow(["Updated", "Form ID", "Event Title", "Form JSON"]);
-        var hRange = configSheet.getRange(1, 1, 1, 4);
-        hRange.setFontWeight("bold");
-        hRange.setBackground("#111827");
-        hRange.setFontColor("#FFFFFF");
+        configSheet.getRange(1, 1, 1, 4)
+          .setFontWeight("bold")
+          .setBackground("#111827")
+          .setFontColor("#FFFFFF");
         configSheet.setFrozenRows(1);
       }
       
@@ -127,7 +158,6 @@ function doPost(e) {
           createdTabName = cleanTab;
           var eventSheet = ss.getSheetByName(cleanTab);
           if (!eventSheet) {
-            // If default sheet is empty and named 'Sheet1', rename it; otherwise insert a new tab
             var activeSheet = ss.getActiveSheet();
             if (activeSheet && activeSheet.getLastRow() === 0 && (activeSheet.getName() === "Sheet1" || activeSheet.getName() === "Sheet 1")) {
               eventSheet = activeSheet;
@@ -137,7 +167,7 @@ function doPost(e) {
             }
           }
 
-          // If the event sheet does not have headers yet, initialize columns right away!
+          // Initialize headers in ONE batched operation if sheet is empty
           if (eventSheet.getLastRow() === 0) {
             var colHeaders = ["Timestamp", "Booking ID"];
             if (Array.isArray(formObj.questions)) {
@@ -148,27 +178,13 @@ function doPost(e) {
                 }
               }
             }
-            eventSheet.getRange(1, 1, 1, colHeaders.length).setValues([colHeaders]);
-            var headerStyle = eventSheet.getRange(1, 1, 1, colHeaders.length);
-            headerStyle.setFontWeight("bold");
-            headerStyle.setBackground("#111827");
-            headerStyle.setFontColor("#FFFFFF");
+            eventSheet.getRange(1, 1, 1, colHeaders.length)
+              .setValues([colHeaders])
+              .setFontWeight("bold")
+              .setBackground("#111827")
+              .setFontColor("#FFFFFF");
             eventSheet.setFrozenRows(1);
           }
-        }
-      }
-
-      // Clean up legacy corrupted 'Registrations' tab if it only contains the old [action, form] columns
-      var legacySheet = ss.getSheetByName("Registrations");
-      if (legacySheet && legacySheet.getLastRow() > 0 && legacySheet.getLastColumn() <= 3) {
-        var firstRow = legacySheet.getRange(1, 1, 1, legacySheet.getLastColumn()).getValues()[0];
-        if (firstRow.indexOf("action") !== -1 && firstRow.indexOf("form") !== -1) {
-          // If only corrupted rows exist, clear it or remove to keep sheet clean
-          try {
-            if (ss.getSheets().length > 1) {
-              ss.deleteSheet(legacySheet);
-            }
-          } catch (delErr) {}
         }
       }
 
@@ -316,13 +332,7 @@ function doPost(e) {
       }
     }
 
-    // Append the row to Google Sheets
     sheet.appendRow(rowData);
-
-    // Auto-resize columns periodically for a polished view
-    if (sheet.getLastRow() % 10 === 0) {
-      sheet.autoResizeColumns(1, headers.length);
-    }
 
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",

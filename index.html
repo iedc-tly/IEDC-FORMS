@@ -26,7 +26,13 @@
       <form id="attendeeRegistrationForm">
         <!-- Event Header Card -->
         <div class="form-card form-header-card">
-          <img id="formBannerImg" class="form-header-banner" src="assets/images/hackathon.jpg" alt="Event Banner">
+          <div class="form-banner-wrapper">
+            <img id="formBannerImg" class="form-header-banner" src="assets/images/AnoopAmbika (1).jpeg" alt="Event Banner" onerror="this.src='assets/images/AnoopAmbika (1).jpeg'">
+            <button type="button" id="btnOpenBannerPicker" class="banner-action-btn" title="Choose banner image from assets">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span>Choose Banner</span>
+            </button>
+          </div>
           <div class="form-header-content">
             <div class="form-meta-badges">
               <span class="pill-badge badge-info" id="formCategoryBadge">Campus Event</span>
@@ -111,9 +117,13 @@
         <h2 style="font-size:1.5rem; font-weight:800; color:var(--text-main); margin-bottom:6px;">
           Your registration is confirmed!
         </h2>
-        <p style="color:var(--text-secondary); font-size:0.95rem; margin-bottom:20px;">
-          Your response has been recorded and synced to Google Sheets. Here is your digital entry pass:
+        <p style="color:var(--text-secondary); font-size:0.95rem; margin-bottom:12px;">
+          Your response has been recorded. Here is your digital entry pass:
         </p>
+        <div id="sheetSyncBadge" style="margin-bottom:20px; font-size:0.8rem; font-weight:600; color:#059669; display:inline-flex; align-items:center; gap:6px; background:#ecfdf5; border:1px solid #a7f3d0; padding:6px 14px; border-radius:9999px;">
+          <svg id="syncIconSuccess" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span id="sheetSyncStatusText">Pass Confirmed &nbsp;•&nbsp; Synced to Google Sheets</span>
+        </div>
 
         <!-- BookMyShow Light E-Ticket Pass -->
         <div class="ticket-light-pass" id="ticketPassElement">
@@ -200,6 +210,38 @@
       <a href="index.html" class="btn btn-secondary">View Available Events</a>
     </div>
   </main>
+
+  <!-- Banner Chooser Modal -->
+  <div id="bannerPickerModal" class="image-modal-overlay" style="display:none;" onclick="closeBannerPicker()">
+    <div class="image-modal-card" style="max-width:540px;" onclick="event.stopPropagation()">
+      <div class="image-modal-header">
+        <div>
+          <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-main); margin-bottom:2px;">Choose Event Banner</h3>
+          <span style="font-size:0.78rem; color:var(--text-muted);">Select an image from workspace assets or specify a custom URL</span>
+        </div>
+        <button type="button" onclick="closeBannerPicker()" style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:var(--text-muted); line-height:1;">&times;</button>
+      </div>
+      <div style="padding:18px 22px;">
+        <div style="font-size:0.75rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:10px;">
+          Available Assets in <code style="font-size:0.75rem; background:#f1f5f9; padding:2px 6px; border-radius:4px;">assets/images/</code>
+        </div>
+        <div id="assetBannerGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;"></div>
+
+        <div style="border-top:1px solid var(--border-color); padding-top:14px;">
+          <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px;">
+            Or Custom Image Path / Web URL
+          </label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="customBannerUrlInput" class="form-control" style="font-size:0.85rem;" placeholder="assets/images/... or https://...">
+            <button type="button" class="btn btn-primary btn-sm" id="btnApplyCustomBanner" style="white-space:nowrap;">Apply</button>
+          </div>
+        </div>
+      </div>
+      <div style="padding:12px 22px; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeBannerPicker()">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast -->
   <div class="light-toast" id="lightToast">
@@ -340,8 +382,71 @@
       // 2. Populate Header & Event Setup
       const isPaid = currentForm.pricingType === 'paid' || (currentForm.fee && !currentForm.fee.includes('Free'));
       document.title = `${currentForm.title} | Registration`;
-      dom.formBannerImg.src = currentForm.bannerUrl || 'assets/images/hackathon.jpg';
+      dom.formBannerImg.src = currentForm.bannerUrl || 'assets/images/AnoopAmbika (1).jpeg';
       dom.formCategoryBadge.textContent = currentForm.category || 'Campus Event';
+
+      // Banner Image Picker Modal Logic
+      const bannerModal = document.getElementById('bannerPickerModal');
+      const assetGrid = document.getElementById('assetBannerGrid');
+      const customBannerInput = document.getElementById('customBannerUrlInput');
+      const btnApplyCustom = document.getElementById('btnApplyCustomBanner');
+      const btnOpenPicker = document.getElementById('btnOpenBannerPicker');
+
+      function renderBannerAssetsGrid() {
+        if (!assetGrid) return;
+        const assets = (FormsStore.AVAILABLE_BANNER_ASSETS && FormsStore.AVAILABLE_BANNER_ASSETS.length) ? FormsStore.AVAILABLE_BANNER_ASSETS : [
+          { id: 'anoop-1', title: 'Keynote Session (Anoop Ambika - 1)', url: 'assets/images/AnoopAmbika (1).jpeg' },
+          { id: 'anoop-2', title: 'Leadership Conclave (Anoop Ambika - 2)', url: 'assets/images/AnoopAmbika (2).jpeg' }
+        ];
+
+        assetGrid.innerHTML = assets.map(a => {
+          const isActive = currentForm && (currentForm.bannerUrl === a.url);
+          return `
+            <div class="banner-asset-card ${isActive ? 'active' : ''}" onclick="selectAssetBanner('${a.url}')">
+              <img src="${a.url}" class="banner-asset-thumb" alt="${a.title}">
+              <div style="padding:8px 10px;">
+                <div style="font-size:0.78rem; font-weight:700; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${a.title}</div>
+                <div style="font-size:0.7rem; color:${isActive ? 'var(--primary)' : 'var(--text-muted)'}; margin-top:2px;">${isActive ? '✓ Selected' : 'Click to Select'}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      window.openBannerPicker = function () {
+        if (!bannerModal) return;
+        renderBannerAssetsGrid();
+        if (customBannerInput && currentForm) {
+          customBannerInput.value = currentForm.bannerUrl || '';
+        }
+        bannerModal.style.display = 'flex';
+      };
+
+      window.closeBannerPicker = function () {
+        if (bannerModal) bannerModal.style.display = 'none';
+      };
+
+      window.selectAssetBanner = function (url) {
+        if (!currentForm || !url) return;
+        currentForm.bannerUrl = url;
+        dom.formBannerImg.src = url;
+        FormsStore.saveForm(currentForm, false);
+        window.closeBannerPicker();
+        showToast('Banner image updated successfully!');
+      };
+
+      if (btnOpenPicker) {
+        btnOpenPicker.addEventListener('click', window.openBannerPicker);
+      }
+
+      if (btnApplyCustom) {
+        btnApplyCustom.addEventListener('click', () => {
+          const val = customBannerInput.value.trim();
+          if (val) {
+            window.selectAssetBanner(val);
+          }
+        });
+      }
       dom.formTitle.textContent = currentForm.title;
       dom.formDesc.textContent = currentForm.description || '';
       dom.formDateText.textContent = currentForm.dateStr || 'Date TBD';
@@ -587,16 +692,11 @@
         copyToClipboard(dom.paymentUpiText.textContent).then(() => showToast('UPI ID copied to clipboard!'));
       };
 
-      // 4. Form Submit Handler
+      // 4. Form Submit Handler (Instant 0-Latency Confirmation & Background Cloud Sync)
       dom.attendeeRegistrationForm.addEventListener('submit', async function (e) {
         e.preventDefault();
 
-        // Loading state
-        dom.btnSubmitForm.disabled = true;
-        dom.submitSpinner.style.display = 'inline-block';
-        dom.submitBtnText.textContent = 'Submitting...';
-
-        // Gather answers
+        // 1. Gather attendee answers
         const formData = new FormData(dom.attendeeRegistrationForm);
         const answers = {};
 
@@ -612,16 +712,31 @@
           }
         }
 
-        // Save & send to Google Sheets
+        // 2. Fast Save & Generate Confirmed Booking Pass (< 5ms)
         const record = await FormsStore.recordSubmission(currentForm, answers);
 
-        // Reset submit button
+        // 3. Immediately Show Confirmation & Digital Ticket Pass (Zero Latency!)
+        showConfirmation(record, currentForm);
+
+        // 4. Reset submit button state
         dom.btnSubmitForm.disabled = false;
         dom.submitSpinner.style.display = 'none';
         dom.submitBtnText.textContent = isPaid ? 'Submit Registration & Proof' : 'Submit Registration';
 
-        // Show Confirmation & Ticket
-        showConfirmation(record, currentForm);
+        // 5. Seamlessly monitor background Google Sheets sync
+        const syncStatusText = document.getElementById('sheetSyncStatusText');
+        if (record._syncPromise && syncStatusText) {
+          syncStatusText.textContent = 'Pass Confirmed • Syncing to Google Sheets...';
+          record._syncPromise.then(() => {
+            if (syncStatusText) {
+              syncStatusText.textContent = 'Pass Confirmed • Synced to Google Sheets';
+            }
+          }).catch(() => {
+            if (syncStatusText) {
+              syncStatusText.textContent = 'Pass Confirmed • Saved in Local Database';
+            }
+          });
+        }
       });
 
       // 5. Show Confirmation with E-Ticket & QR Code
