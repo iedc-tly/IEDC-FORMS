@@ -51,7 +51,11 @@ function doGet(e) {
         var rows = configSheet.getDataRange().getValues();
         var targetId = String(id).toLowerCase().trim();
         for (var i = 1; i < rows.length; i++) {
-          if (String(rows[i][1]).toLowerCase().trim() === targetId) {
+          var rowId = String(rows[i][1]).toLowerCase().trim();
+          var isMatch = (rowId === targetId) ||
+                        (targetId === "e126" && (rowId === "interactive-session" || rowId === "e126")) ||
+                        (targetId === "interactive-session" && rowId === "e126");
+          if (isMatch) {
             // Locate column holding the JSON payload (col 3 in 4-column schema, col 2 in 3-column schema)
             var jsonStr = "";
             if (rows[i][3] && String(rows[i][3]).indexOf('{') !== -1) {

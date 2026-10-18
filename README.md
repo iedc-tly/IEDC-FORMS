@@ -18,8 +18,9 @@ A lightweight, modern web application for managing event registrations for IEDC 
 
 ## 🔗 Quick Links
 
-- **Attendee Registration Form**: `https://iedc-tly.github.io/IEDC-FORMS/?form=hacknova-2026`
-- **Admin Studio**: `https://iedc-tly.github.io/IEDC-FORMS/admin.html`
+- **Event 1 (2026) Clean Short Link**: `https://iedc-tly.github.io/register/e126`
+- **Attendee Registration Portal**: `https://iedc-tly.github.io/register/`
+- **Admin Studio**: `https://iedc-tly.github.io/register/admin.html`
 
 ---
 

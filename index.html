@@ -264,9 +264,28 @@
     (async function () {
       'use strict';
 
-      // 1. Determine active form from URL parameter ?form=..., encoded data &d=..., or default to first
+      // 1. Determine active form from URL parameter ?form=..., pathname slug /register/e126, hash #/e126, or encoded data &d=...
       const params = new URLSearchParams(window.location.search);
-      const formId = params.get('form') || params.get('id');
+      let formId = params.get('form') || params.get('id');
+
+      // If not in query params, inspect pathname (e.g. /register/e126 or /e126)
+      if (!formId) {
+        const pathSegments = window.location.pathname.split('/').filter(Boolean);
+        if (pathSegments.length > 0) {
+          const lastSegment = pathSegments[pathSegments.length - 1];
+          if (lastSegment && !lastSegment.endsWith('.html') && lastSegment !== 'register' && lastSegment !== 'Register_forms') {
+            formId = decodeURIComponent(lastSegment);
+          }
+        }
+      }
+
+      // Check URL hash if not found yet (e.g. #/e126 or #e126)
+      if (!formId && window.location.hash) {
+        const cleanHash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
+        if (cleanHash && !cleanHash.includes('=')) {
+          formId = decodeURIComponent(cleanHash);
+        }
+      }
 
       // Check URL query and hash for self-contained encoded data
       let urlData = params.get('d') || params.get('data');

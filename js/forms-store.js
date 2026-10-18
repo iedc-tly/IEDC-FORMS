@@ -296,6 +296,7 @@ const FormsStore = (function () {
     },
     {
       id: "interactive-session",
+      aliases: ["e126", "e1-2026", "e1"],
       title: "INTERACTIVE SESSION",
       description: "Join the interactive session at College Auditorium. Engage with mentors, ask questions, and explore exciting campus initiatives.",
       bannerUrl: "assets/images/AnoopAmbika (1).jpeg",
@@ -411,8 +412,26 @@ const FormsStore = (function () {
   }
 
   function getFormById(id) {
+    if (!id) return null;
+    const cleanId = String(id).toLowerCase().trim();
     const forms = getForms();
-    return forms.find(f => f.id === id) || null;
+
+    // 1. Direct match on id
+    let match = forms.find(f => f.id && f.id.toLowerCase() === cleanId);
+    if (match) return match;
+
+    // 2. Match on aliases array
+    match = forms.find(f => Array.isArray(f.aliases) && f.aliases.some(a => String(a).toLowerCase() === cleanId));
+    if (match) return match;
+
+    // 3. Clean Short Link Slug mapping: e126 (or e1, e1-2026) maps to Event 1 of 2026
+    if (cleanId === 'e126' || cleanId === 'e1' || cleanId === 'e1-2026') {
+      return forms.find(f => f.id === 'interactive-session') ||
+             forms.find(f => f.id === 'hacknova-2026') ||
+             forms[0] || null;
+    }
+
+    return null;
   }
 
   const AVAILABLE_BANNER_ASSETS = [
@@ -591,26 +610,29 @@ const FormsStore = (function () {
     try {
       let href = window.location.href.split('?')[0].split('#')[0];
       if (href.endsWith('.html')) {
-        return href.replace(/[^/]+\.html$/, 'index.html');
+        return href.replace(/[^/]+\.html$/, '');
       } else if (href.endsWith('/')) {
-        return href + 'index.html';
+        return href;
       } else {
-        return href + '/index.html';
+        return href + '/';
       }
     } catch (e) {
-      return 'index.html';
+      return '';
     }
   }
 
   /**
-   * Short Link: Clean URL (?form=new-event)
+   * Short Link: Clean Slug URL (e.g. https://iedc-tly.github.io/register/e126)
    * Resolves instantly across devices when synced with Google Sheets or cached locally.
    */
   function getShortUrl(formOrId) {
     const id = typeof formOrId === 'string' ? formOrId : (formOrId && formOrId.id);
     if (!id) return '';
     const base = getBaseUrl();
-    return `${base}?form=${encodeURIComponent(id)}`;
+    if (base.indexOf('file://') === 0) {
+      return `${base}index.html?form=${encodeURIComponent(id)}`;
+    }
+    return `${base}${encodeURIComponent(id)}`;
   }
 
   /**

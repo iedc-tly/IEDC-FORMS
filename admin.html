@@ -195,8 +195,8 @@
               </div>
               <div>
                 <label class="question-label" for="builderFormId">Short Link Slug <span class="req-star">*</span></label>
-                <input class="form-control" type="text" id="builderFormId" placeholder="e.g., hacknova-2026" required>
-                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Link: ?form=<b><span id="builderSlugPreview">...</span></b></div>
+                <input class="form-control" type="text" id="builderFormId" placeholder="e.g., e126" required>
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Short Link: <b><span id="builderSlugPreview">...</span></b></div>
               </div>
             </div>
 
@@ -817,7 +817,7 @@
       function resetBuilderForm() {
         activeEditingFormId = null;
         dom.builderHeading.textContent = 'Create Event Form';
-        const defaultSlug = 'new-event';
+        const defaultSlug = 'e126';
         dom.builderFormId.value = defaultSlug;
         if (dom.builderSlugPreview) {
           dom.builderSlugPreview.textContent = FormsStore.getShortUrl(defaultSlug);
