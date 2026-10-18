@@ -119,6 +119,22 @@ const FormsStore = (function () {
       placeholder: "https://linkedin.com/in/... or github.com/...",
       required: false,
       category: "Profiles"
+    },
+    {
+      id: "payment_screenshot",
+      title: "Upload Payment Screenshot (UPI / Bank Proof)",
+      type: "file_upload",
+      required: true,
+      helpText: "Upload a screenshot of your successful UPI payment showing the UTR / Ref No.",
+      category: "Payment"
+    },
+    {
+      id: "student_id_proof",
+      title: "Student ID Card Photo",
+      type: "file_upload",
+      required: false,
+      helpText: "Upload a photo of your College ID card for entry verification",
+      category: "Academic"
     }
   ];
 
@@ -133,7 +149,11 @@ const FormsStore = (function () {
       timeStr: "09:00 AM IST onwards",
       venue: "Innovation Hub & Convention Center, Campus North Block",
       sheetWebhookUrl: DEFAULT_WEBHOOK_URL,
-      fee: "₹0 (Free)",
+      category: "Campus Event",
+      pricingType: "free",
+      fee: "₹0 (Free Entry)",
+      paymentQr: "",
+      paymentInstructions: "",
       questions: [
         {
           id: "q_name",
@@ -217,7 +237,11 @@ const FormsStore = (function () {
       timeStr: "09:30 AM - 05:30 PM IST",
       venue: "Auditorium Grand Hall, Senate Complex",
       sheetWebhookUrl: DEFAULT_WEBHOOK_URL,
-      fee: "₹0 (Free)",
+      category: "Campus Event",
+      pricingType: "free",
+      fee: "₹0 (Free Entry)",
+      paymentQr: "",
+      paymentInstructions: "",
       questions: [
         {
           id: "q_name",
@@ -286,6 +310,18 @@ const FormsStore = (function () {
             f.sheetWebhookUrl = DEFAULT_WEBHOOK_URL;
             updated = true;
           }
+          if (!f.category) {
+            f.category = 'Campus Event';
+            updated = true;
+          }
+          if (!f.pricingType) {
+            f.pricingType = 'free';
+            updated = true;
+          }
+          if (!f.fee) {
+            f.fee = '₹0 (Free Entry)';
+            updated = true;
+          }
         });
         if (updated) localStorage.setItem(FORMS_KEY, JSON.stringify(parsed));
         return parsed;
@@ -314,6 +350,12 @@ const FormsStore = (function () {
   }
 
   function saveForm(form, skipCloudSync = false) {
+    if (!form.category) form.category = 'Campus Event';
+    if (!form.pricingType) form.pricingType = 'free';
+    if (!form.fee) form.fee = form.pricingType === 'paid' ? '₹99' : '₹0 (Free Entry)';
+    if (form.paymentQr === undefined) form.paymentQr = '';
+    if (form.paymentInstructions === undefined) form.paymentInstructions = '';
+
     const forms = getForms();
     const idx = forms.findIndex(f => f.id === form.id);
     if (idx >= 0) {
@@ -349,26 +391,32 @@ const FormsStore = (function () {
         t: form.title || ''
       };
       if (form.description) compact.ds = form.description;
+      if (form.category && form.category !== 'Campus Event') compact.c = form.category;
+      if (form.pricingType && form.pricingType !== 'free') compact.pt = form.pricingType;
+      if (form.fee && form.fee !== '₹0 (Free Entry)') compact.f = form.fee;
+      if (form.paymentQr) compact.qr = form.paymentQr;
+      if (form.paymentInstructions) compact.pi = form.paymentInstructions;
       if (form.venue && form.venue !== 'Campus Venue') compact.v = form.venue;
       if (form.dateStr && form.dateStr !== 'Date TBD') compact.d = form.dateStr;
       if (form.timeStr && form.timeStr !== '09:00 AM') compact.tm = form.timeStr;
       if (form.bannerUrl && form.bannerUrl !== DEFAULT_BANNER_URL) compact.b = form.bannerUrl;
       if (form.sheetWebhookUrl && form.sheetWebhookUrl !== DEFAULT_WEBHOOK_URL) compact.w = form.sheetWebhookUrl;
-      if (form.fee && form.fee !== '₹0 (Free)') compact.f = form.fee;
 
       if (Array.isArray(form.questions) && form.questions.length > 0) {
         compact.q = form.questions.map(q => {
           const type = q.type || 'text';
           const isChoice = ['single_select', 'multiple_select', 'dropdown'].includes(type);
           const item = [q.title || 'Question'];
-          if (type !== 'text' || q.required || (isChoice && q.options && q.options.length)) {
+          if (type !== 'text' || q.required || (isChoice && q.options && q.options.length) || q.helpText) {
             item.push(type === 'text' ? '' : type);
           }
-          if (q.required || (isChoice && q.options && q.options.length)) {
+          if (q.required || (isChoice && q.options && q.options.length) || q.helpText) {
             item.push(q.required ? 1 : 0);
           }
           if (isChoice && Array.isArray(q.options) && q.options.length > 0) {
             item.push(q.options);
+          } else if (q.helpText) {
+            item.push(q.helpText);
           }
           return item;
         });
@@ -409,12 +457,16 @@ const FormsStore = (function () {
           id: fallbackId || data.i || (`form-${Date.now()}`),
           title: data.t,
           description: data.ds || '',
+          category: data.c || 'Campus Event',
+          pricingType: data.pt || 'free',
+          fee: data.f || (data.pt === 'paid' ? '₹99' : '₹0 (Free Entry)'),
+          paymentQr: data.qr || '',
+          paymentInstructions: data.pi || '',
           venue: data.v || 'Campus Venue',
           dateStr: data.d || 'Date TBD',
           timeStr: data.tm || '09:00 AM',
           bannerUrl: data.b || DEFAULT_BANNER_URL,
           sheetWebhookUrl: data.w || DEFAULT_WEBHOOK_URL,
-          fee: data.f || '₹0 (Free)',
           questions: (data.q || []).map((item, idx) => {
             if (Array.isArray(item)) {
               return {
@@ -422,7 +474,8 @@ const FormsStore = (function () {
                 title: item[0],
                 type: item[1] || 'text',
                 required: Boolean(item[2]),
-                options: Array.isArray(item[3]) ? item[3] : []
+                options: Array.isArray(item[3]) ? item[3] : [],
+                helpText: typeof item[3] === 'string' ? item[3] : ''
               };
             }
             return item;
@@ -432,6 +485,9 @@ const FormsStore = (function () {
 
       // Support legacy schema
       if (data && data.title) {
+        if (!data.category) data.category = 'Campus Event';
+        if (!data.pricingType) data.pricingType = 'free';
+        if (!data.fee) data.fee = '₹0 (Free Entry)';
         if (!data.sheetWebhookUrl) data.sheetWebhookUrl = DEFAULT_WEBHOOK_URL;
         if (!data.bannerUrl) data.bannerUrl = DEFAULT_BANNER_URL;
         return data;

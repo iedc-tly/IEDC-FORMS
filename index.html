@@ -30,11 +30,11 @@
           <div class="form-header-content">
             <div class="form-meta-badges">
               <span class="pill-badge badge-info" id="formCategoryBadge">Campus Event</span>
-              <span class="pill-badge badge-free">₹0 (Free Entry)</span>
               <button type="button" class="pill-badge" id="btnShareFormTop" style="cursor:pointer; background:#fff; border:1px solid #cbd5e1; color:var(--primary); font-weight:700; display:inline-flex; align-items:center; gap:4px;" title="Share this registration form">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                 <span>Share</span>
               </button>
+              <span class="pill-badge badge-free" id="formPricingBadge">₹0 (Free Entry)</span>
             </div>
             <h1 class="form-title" id="formTitle">Loading Event Form...</h1>
             <p class="form-description" id="formDesc"></p>
@@ -58,6 +58,29 @@
           </div>
         </div>
 
+        <!-- Payment Notice & QR Card (Displayed when pricingType === 'paid') -->
+        <div id="paymentNoticeCard" class="payment-notice-card" style="display:none;">
+          <div class="payment-qr-container" id="paymentQrBox" style="display:none;">
+            <div class="payment-qr-box">
+              <img id="paymentQrImg" class="payment-qr-img" src="" alt="Payment QR Code">
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:6px; font-weight:600;">Scan to Pay with any UPI App</div>
+          </div>
+          <div class="payment-details-body">
+            <span class="pill-badge badge-paid" style="font-size:0.75rem; margin-bottom:8px;">REGISTRATION FEE</span>
+            <div class="payment-amount-highlight" id="paymentAmountDisplay">
+              ₹99 <span style="font-size:0.85rem; font-weight:500; color:var(--text-muted);">/ per entry</span>
+            </div>
+            <div id="paymentUpiBox" class="payment-upi-box" style="display:none;">
+              <span>UPI: <b id="paymentUpiText">iedc@upi</b></span>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="copyUpiId()" style="padding:2px 8px; font-size:0.74rem;">Copy</button>
+            </div>
+            <p id="paymentInstructionsText" style="font-size:0.85rem; color:var(--text-secondary); line-height:1.5; margin-top:6px; margin-bottom:0;">
+              Please complete the payment and upload the transaction screenshot in the field below.
+            </p>
+          </div>
+        </div>
+
         <!-- Dynamic Questions Container -->
         <div id="questionsContainer">
           <!-- Questions injected dynamically -->
@@ -66,8 +89,8 @@
         <!-- Submit & Order Summary Card -->
         <div class="submit-card">
           <div class="fee-summary">
-            <span class="fee-amount">₹0 (Free Entry)</span>
-            <span class="fee-sub">Instant digital pass</span>
+            <span class="fee-amount" id="submitFeeAmount">₹0 (Free Entry)</span>
+            <span class="fee-sub" id="submitFeeSub">Instant digital pass</span>
           </div>
           <button type="submit" class="btn btn-primary" id="btnSubmitForm">
             <span id="submitSpinner" style="display:none; width:14px; height:14px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation: spin 0.8s linear infinite;"></span>
@@ -110,7 +133,7 @@
               </div>
               <div class="ticket-detail-item">
                 <span class="ticket-detail-label">Fee</span>
-                <span class="ticket-detail-val" style="color:var(--accent-green);">₹0 (Free Entry)</span>
+                <span class="ticket-detail-val" id="ticketFeeVal" style="color:var(--accent-green);">₹0 (Free Entry)</span>
               </div>
               <div class="ticket-detail-item">
                 <span class="ticket-detail-label">Date</span>
@@ -257,14 +280,24 @@
         availableEventsList: document.getElementById('availableEventsList'),
         formBannerImg: document.getElementById('formBannerImg'),
         formCategoryBadge: document.getElementById('formCategoryBadge'),
+        formPricingBadge: document.getElementById('formPricingBadge'),
         btnShareFormTop: document.getElementById('btnShareFormTop'),
         formTitle: document.getElementById('formTitle'),
         formDesc: document.getElementById('formDesc'),
         formDateText: document.getElementById('formDateText'),
         formTimeText: document.getElementById('formTimeText'),
         formVenueText: document.getElementById('formVenueText'),
+        paymentNoticeCard: document.getElementById('paymentNoticeCard'),
+        paymentQrBox: document.getElementById('paymentQrBox'),
+        paymentQrImg: document.getElementById('paymentQrImg'),
+        paymentAmountDisplay: document.getElementById('paymentAmountDisplay'),
+        paymentUpiBox: document.getElementById('paymentUpiBox'),
+        paymentUpiText: document.getElementById('paymentUpiText'),
+        paymentInstructionsText: document.getElementById('paymentInstructionsText'),
         questionsContainer: document.getElementById('questionsContainer'),
         attendeeRegistrationForm: document.getElementById('attendeeRegistrationForm'),
+        submitFeeAmount: document.getElementById('submitFeeAmount'),
+        submitFeeSub: document.getElementById('submitFeeSub'),
         btnSubmitForm: document.getElementById('btnSubmitForm'),
         submitBtnText: document.getElementById('submitBtnText'),
         submitSpinner: document.getElementById('submitSpinner'),
@@ -273,6 +306,7 @@
         ticketBookingId: document.getElementById('ticketBookingId'),
         ticketEventTitle: document.getElementById('ticketEventTitle'),
         ticketAttendeeName: document.getElementById('ticketAttendeeName'),
+        ticketFeeVal: document.getElementById('ticketFeeVal'),
         ticketDateVal: document.getElementById('ticketDateVal'),
         ticketTimeVal: document.getElementById('ticketTimeVal'),
         ticketVenueVal: document.getElementById('ticketVenueVal'),
@@ -303,14 +337,53 @@
         return;
       }
 
-      // 2. Populate Header
+      // 2. Populate Header & Event Setup
+      const isPaid = currentForm.pricingType === 'paid' || (currentForm.fee && !currentForm.fee.includes('Free'));
       document.title = `${currentForm.title} | Registration`;
       dom.formBannerImg.src = currentForm.bannerUrl || 'assets/images/hackathon.jpg';
+      dom.formCategoryBadge.textContent = currentForm.category || 'Campus Event';
       dom.formTitle.textContent = currentForm.title;
       dom.formDesc.textContent = currentForm.description || '';
       dom.formDateText.textContent = currentForm.dateStr || 'Date TBD';
       dom.formTimeText.textContent = currentForm.timeStr || 'Time TBD';
       dom.formVenueText.textContent = currentForm.venue || 'Venue TBD';
+
+      if (isPaid) {
+        const feeStr = currentForm.fee || 'Paid Event';
+        dom.formPricingBadge.className = 'pill-badge badge-paid';
+        dom.formPricingBadge.textContent = feeStr;
+        if (dom.submitFeeAmount) dom.submitFeeAmount.textContent = feeStr;
+        if (dom.submitFeeSub) dom.submitFeeSub.textContent = 'Payment proof required';
+        if (dom.submitBtnText) dom.submitBtnText.textContent = 'Submit Registration & Proof';
+
+        // Payment Notice Card
+        if (dom.paymentNoticeCard) {
+          dom.paymentNoticeCard.style.display = 'flex';
+          dom.paymentAmountDisplay.innerHTML = `${escapeHtml(feeStr)} <span style="font-size:0.85rem; font-weight:500; color:var(--text-muted);">/ per entry</span>`;
+          if (currentForm.paymentQr) {
+            dom.paymentQrImg.src = currentForm.paymentQr;
+            dom.paymentQrBox.style.display = 'block';
+          } else {
+            dom.paymentQrBox.style.display = 'none';
+          }
+          if (currentForm.upiId) {
+            dom.paymentUpiText.textContent = currentForm.upiId;
+            dom.paymentUpiBox.style.display = 'inline-flex';
+          } else {
+            dom.paymentUpiBox.style.display = 'none';
+          }
+          if (currentForm.paymentInstructions) {
+            dom.paymentInstructionsText.textContent = currentForm.paymentInstructions;
+          }
+        }
+      } else {
+        dom.formPricingBadge.className = 'pill-badge badge-free';
+        dom.formPricingBadge.textContent = '₹0 (Free Entry)';
+        if (dom.submitFeeAmount) dom.submitFeeAmount.textContent = '₹0 (Free Entry)';
+        if (dom.submitFeeSub) dom.submitFeeSub.textContent = 'Instant digital pass';
+        if (dom.submitBtnText) dom.submitBtnText.textContent = 'Submit Registration';
+        if (dom.paymentNoticeCard) dom.paymentNoticeCard.style.display = 'none';
+      }
 
       // 3. Render Questions (Google Forms Style)
       renderQuestions(currentForm.questions || []);
@@ -324,12 +397,40 @@
           const fieldId = `q_input_${idx}`;
 
           html += `<div class="question-card" id="qcard_${idx}">`;
-          html += `<label class="question-label" for="${fieldId}">${q.title} ${reqStar}</label>`;
+          html += `<label class="question-label" for="${fieldId}">${escapeHtml(q.title)} ${reqStar}</label>`;
           if (help) html += help;
 
           // Number Only question (requested specifically!)
           if (q.type === 'number') {
-            html += `<input type="number" class="form-control" id="${fieldId}" name="${q.title}" placeholder="${q.placeholder || 'Enter a number...'}" ${isReq ? 'required' : ''}>`;
+            html += `<input type="number" class="form-control" id="${fieldId}" name="${escapeHtml(q.title)}" placeholder="${escapeHtml(q.placeholder || 'Enter a number...')}" ${isReq ? 'required' : ''}>`;
+          }
+          // File / Screenshot Upload question
+          else if (q.type === 'file_upload') {
+            html += `
+              <div class="file-upload-zone" id="fuz_${idx}">
+                <input type="hidden" id="${fieldId}" name="${escapeHtml(q.title)}" value="" ${isReq ? 'required' : ''}>
+                <input type="file" id="file_raw_${idx}" accept="image/*" style="display:none;" onchange="handleFileUpload(event, ${idx}, '${fieldId}')">
+                
+                <div class="upload-dropzone" id="dropzone_${idx}" onclick="document.getElementById('file_raw_${idx}').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, ${idx}, '${fieldId}')">
+                  <div class="upload-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                  </div>
+                  <div>
+                    <span class="upload-btn-fake">Choose Image / Screenshot</span>
+                    <span class="upload-hint">or drag & drop here (JPG, PNG, WebP)</span>
+                  </div>
+                </div>
+
+                <div class="upload-preview" id="preview_${idx}" style="display:none;">
+                  <img class="upload-preview-thumb" id="thumb_${idx}" src="" alt="Proof Preview">
+                  <div class="upload-file-details">
+                    <span class="upload-file-name" id="fname_${idx}">screenshot.jpg</span>
+                    <span class="upload-file-size" id="fsize_${idx}">Ready</span>
+                  </div>
+                  <button type="button" class="btn-remove-upload" onclick="removeUploadedFile(${idx}, '${fieldId}')">✕ Remove</button>
+                </div>
+              </div>
+            `;
           }
           // Single select (Radio)
           else if (q.type === 'single_select') {
@@ -338,8 +439,8 @@
             options.forEach((opt, oIdx) => {
               html += `
                 <label class="option-item">
-                  <input type="radio" name="${q.title}" value="${opt}" ${isReq && oIdx === 0 ? 'checked' : ''} ${isReq ? 'required' : ''}>
-                  <span>${opt}</span>
+                  <input type="radio" name="${escapeHtml(q.title)}" value="${escapeHtml(opt)}" ${isReq && oIdx === 0 ? 'checked' : ''} ${isReq ? 'required' : ''}>
+                  <span>${escapeHtml(opt)}</span>
                 </label>
               `;
             });
@@ -352,8 +453,8 @@
             options.forEach(opt => {
               html += `
                 <label class="option-item">
-                  <input type="checkbox" name="${q.title}" value="${opt}">
-                  <span>${opt}</span>
+                  <input type="checkbox" name="${escapeHtml(q.title)}" value="${escapeHtml(opt)}">
+                  <span>${escapeHtml(opt)}</span>
                 </label>
               `;
             });
@@ -362,28 +463,28 @@
           // Dropdown (Select)
           else if (q.type === 'dropdown') {
             const options = q.options || ['Option 1', 'Option 2'];
-            html += `<select class="form-control" id="${fieldId}" name="${q.title}" ${isReq ? 'required' : ''}>`;
+            html += `<select class="form-control" id="${fieldId}" name="${escapeHtml(q.title)}" ${isReq ? 'required' : ''}>`;
             html += `<option value="" disabled selected>Select an option...</option>`;
             options.forEach(opt => {
-              html += `<option value="${opt}">${opt}</option>`;
+              html += `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`;
             });
             html += `</select>`;
           }
           // Paragraph / Textarea
           else if (q.type === 'paragraph' || q.type === 'textarea') {
-            html += `<textarea class="form-control" id="${fieldId}" name="${q.title}" placeholder="${q.placeholder || 'Your answer...'}" ${isReq ? 'required' : ''}></textarea>`;
+            html += `<textarea class="form-control" id="${fieldId}" name="${escapeHtml(q.title)}" placeholder="${escapeHtml(q.placeholder || 'Your answer...')}" ${isReq ? 'required' : ''}></textarea>`;
           }
           // Email
           else if (q.type === 'email') {
-            html += `<input type="email" class="form-control" id="${fieldId}" name="${q.title}" placeholder="${q.placeholder || 'example@gmail.com'}" ${isReq ? 'required' : ''}>`;
+            html += `<input type="email" class="form-control" id="${fieldId}" name="${escapeHtml(q.title)}" placeholder="${escapeHtml(q.placeholder || 'example@gmail.com')}" ${isReq ? 'required' : ''}>`;
           }
           // Tel
           else if (q.type === 'tel') {
-            html += `<input type="tel" class="form-control" id="${fieldId}" name="${q.title}" placeholder="${q.placeholder || 'Mobile number'}" ${isReq ? 'required' : ''}>`;
+            html += `<input type="tel" class="form-control" id="${fieldId}" name="${escapeHtml(q.title)}" placeholder="${escapeHtml(q.placeholder || 'Mobile number')}" ${isReq ? 'required' : ''}>`;
           }
           // Standard Short Text
           else {
-            html += `<input type="text" class="form-control" id="${fieldId}" name="${q.title}" placeholder="${q.placeholder || 'Your answer...'}" ${isReq ? 'required' : ''}>`;
+            html += `<input type="text" class="form-control" id="${fieldId}" name="${escapeHtml(q.title)}" placeholder="${escapeHtml(q.placeholder || 'Your answer...')}" ${isReq ? 'required' : ''}>`;
           }
 
           html += `</div>`;
@@ -391,6 +492,100 @@
 
         dom.questionsContainer.innerHTML = html;
       }
+
+      // Client-Side Canvas Image Compression
+      function compressImage(file, maxDimension = 800, quality = 0.75) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              let width = img.width;
+              let height = img.height;
+              if (width > height) {
+                if (width > maxDimension) {
+                  height = Math.round((height * maxDimension) / width);
+                  width = maxDimension;
+                }
+              } else {
+                if (height > maxDimension) {
+                  width = Math.round((width * maxDimension) / height);
+                  height = maxDimension;
+                }
+              }
+
+              const canvas = document.createElement('canvas');
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              const dataUrl = canvas.toDataURL('image/jpeg', quality);
+              resolve(dataUrl);
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      window.handleFileUpload = async function (e, idx, fieldId) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        processFile(file, idx, fieldId);
+      };
+
+      window.handleDragOver = function (e) {
+        e.preventDefault();
+        e.currentTarget.classList.add('dragover');
+      };
+
+      window.handleDragLeave = function (e) {
+        e.currentTarget.classList.remove('dragover');
+      };
+
+      window.handleFileDrop = function (e, idx, fieldId) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('dragover');
+        const file = e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+          processFile(file, idx, fieldId);
+        } else {
+          showToast('Please upload an image file (PNG, JPG, WebP)');
+        }
+      };
+
+      async function processFile(file, idx, fieldId) {
+        showToast('Optimizing and loading image...');
+        try {
+          const compressedDataUrl = await compressImage(file, 800, 0.75);
+          document.getElementById(fieldId).value = compressedDataUrl;
+          document.getElementById(`thumb_${idx}`).src = compressedDataUrl;
+          document.getElementById(`fname_${idx}`).textContent = file.name;
+          const approxKb = Math.round((compressedDataUrl.length * 3) / 4 / 1024);
+          document.getElementById(`fsize_${idx}`).textContent = `Compressed (~${approxKb} KB)`;
+          document.getElementById(`dropzone_${idx}`).style.display = 'none';
+          document.getElementById(`preview_${idx}`).style.display = 'flex';
+          showToast('Image uploaded and ready!');
+        } catch (err) {
+          console.error('File compression error:', err);
+          showToast('Could not process image. Please try another.');
+        }
+      }
+
+      window.removeUploadedFile = function (idx, fieldId) {
+        document.getElementById(fieldId).value = '';
+        const rawInput = document.getElementById(`file_raw_${idx}`);
+        if (rawInput) rawInput.value = '';
+        document.getElementById(`dropzone_${idx}`).style.display = 'flex';
+        document.getElementById(`preview_${idx}`).style.display = 'none';
+      };
+
+      window.copyUpiId = function () {
+        if (!dom.paymentUpiText) return;
+        copyToClipboard(dom.paymentUpiText.textContent).then(() => showToast('UPI ID copied to clipboard!'));
+      };
 
       // 4. Form Submit Handler
       dom.attendeeRegistrationForm.addEventListener('submit', async function (e) {
@@ -423,7 +618,7 @@
         // Reset submit button
         dom.btnSubmitForm.disabled = false;
         dom.submitSpinner.style.display = 'none';
-        dom.submitBtnText.textContent = 'Submit Registration';
+        dom.submitBtnText.textContent = isPaid ? 'Submit Registration & Proof' : 'Submit Registration';
 
         // Show Confirmation & Ticket
         showConfirmation(record, currentForm);
@@ -435,10 +630,17 @@
         dom.confirmationView.style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
+        const isPaidForm = form.pricingType === 'paid' || (form.fee && !form.fee.includes('Free'));
+        const feeStr = isPaidForm ? (form.fee || 'Paid') : '₹0 (Free Entry)';
+
         // Populate Ticket
         dom.ticketBookingId.textContent = record['Booking ID'];
         dom.ticketEventTitle.textContent = form.title;
         dom.ticketAttendeeName.textContent = record['Full Name'] || record['Name'] || record['full_name'] || Object.values(record)[6] || 'Registered Attendee';
+        if (dom.ticketFeeVal) {
+          dom.ticketFeeVal.textContent = feeStr;
+          dom.ticketFeeVal.style.color = isPaidForm ? 'var(--primary)' : 'var(--accent-green)';
+        }
         dom.ticketDateVal.textContent = form.dateStr || 'Confirmed';
         dom.ticketTimeVal.textContent = form.timeStr || '09:00 AM';
         dom.ticketVenueVal.textContent = form.venue || 'Campus Auditorium';
@@ -446,7 +648,8 @@
         // Generate Scannable QR Code
         dom.ticketQrHolder.innerHTML = '';
         try {
-          const qrText = `IEDC PASS: ${record['Booking ID']} | Event: ${form.title} | Attendee: ${dom.ticketAttendeeName.textContent} | Status: CONFIRMED FREE PASS`;
+          const passStatus = isPaidForm ? `CONFIRMED PASS (Fee: ${feeStr})` : 'CONFIRMED FREE PASS';
+          const qrText = `IEDC PASS: ${record['Booking ID']} | Event: ${form.title} | Attendee: ${dom.ticketAttendeeName.textContent} | Status: ${passStatus}`;
           new QRCode(dom.ticketQrHolder, {
             text: qrText,
             width: 90,
@@ -504,10 +707,11 @@
       function shareEvent() {
         if (!currentForm) return;
         const shareUrl = FormsStore.getShareableUrl(currentForm);
+        const shareText = isPaid ? `Register for ${currentForm.title} - Entry Fee: ${currentForm.fee || 'Paid'}` : `Register for ${currentForm.title} - Free Digital Entry Pass!`;
         if (navigator.share) {
           navigator.share({
             title: currentForm.title,
-            text: `Register for ${currentForm.title} - Free Digital Entry Pass!`,
+            text: shareText,
             url: shareUrl
           }).catch(() => {
             copyToClipboard(shareUrl).then(() => showToast('Shareable link copied to clipboard!'));
@@ -528,6 +732,11 @@
         dom.toastMsg.textContent = text;
         dom.lightToast.classList.add('show');
         setTimeout(() => dom.lightToast.classList.remove('show'), 3500);
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       }
 
     })();

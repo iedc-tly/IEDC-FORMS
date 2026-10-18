@@ -2,22 +2,18 @@
  * ==========================================================================
  *  IEDC EVENT REGISTRATION WEBHOOK - GOOGLE APPS SCRIPT
  * ==========================================================================
- *  This script receives registration submissions from your GitHub-hosted
- *  BookMyShow-style web app and appends them to your Google Sheet.
+ *  This script receives registration submissions and form setups from your
+ *  BookMyShow-style web app and automatically creates dedicated event tabs
+ *  in your Google Sheet, stores attendee responses, and saves payment proof images!
  * 
- *  HOW TO SETUP (takes only 2 minutes):
- *  1. Open Google Sheets (https://sheets.new) & create a new Sheet (e.g. "Event Registrations 2026").
- *  2. In the menu, click: Extensions -> Apps Script.
- *  3. Delete any default code in Code.gs, paste this entire file, and click Save (Ctrl+S / Cmd+S).
- *  4. Click "Deploy" -> "New deployment".
- *  5. Click the gear icon next to "Select type" and choose "Web app".
- *  6. Set:
- *     - Description: "Event Registration API"
- *     - Execute as: "Me"
- *     - Who has access: "Anyone" (CRITICAL: Must be "Anyone" so submissions from your website can reach it)
- *  7. Click "Deploy" -> Authorize access with your Google account.
- *  8. Copy the "Web app URL" (starts with https://script.google.com/macros/s/...)
- *  9. Paste this URL into `js/config.js` or via the in-app "Sheet Setup" modal in your web app!
+ *  HOW TO SETUP / UPDATE (takes only 1 minute):
+ *  1. Open your Google Sheet (e.g. "Event Registrations").
+ *  2. In the top menu, click: Extensions -> Apps Script.
+ *  3. Delete any existing code in Code.gs, paste this entire file, and click Save (Ctrl+S).
+ *  4. Click "Deploy" -> "Manage deployments".
+ *  5. Click the pencil icon (Edit) on your Active deployment.
+ *  6. In the "Version" dropdown, select "New version" (CRITICAL: Every time code updates, choose New Version).
+ *  7. Click "Deploy". Done!
  * ==========================================================================
  */
 
@@ -74,47 +70,124 @@ function doPost(e) {
       payload = e.parameter || {};
     }
 
-    // Handle Form Configuration Sync (Enables ultra-short URLs like ?form=new-event)
-    if (payload.action === "save_form_config" && payload.form) {
+    // =========================================================================
+    // ACTION 1: Form Configuration Sync & Auto Event Tab Pre-Creation
+    // Triggered when an admin saves/publishes a form in the Admin Dashboard
+    // =========================================================================
+    if (payload.action === "save_form_config" || (payload.form && !payload["Booking ID"])) {
+      var formObj = payload.form;
+      if (typeof formObj === "string") {
+        try {
+          formObj = JSON.parse(formObj);
+        } catch (fErr) {}
+      }
+      formObj = formObj || {};
+
+      var formId = formObj.id || payload.formId || "event-" + Date.now();
+      var eventTitle = formObj.title || payload.title || "";
+
+      // A. Sync form JSON into _Forms_Config tab (for short URL lookups)
       var configSheet = ss.getSheetByName("_Forms_Config");
       if (!configSheet) {
         configSheet = ss.insertSheet("_Forms_Config");
-        configSheet.appendRow(["Updated", "Form ID", "Form JSON"]);
-        var hRange = configSheet.getRange(1, 1, 1, 3);
+        configSheet.appendRow(["Updated", "Form ID", "Event Title", "Form JSON"]);
+        var hRange = configSheet.getRange(1, 1, 1, 4);
         hRange.setFontWeight("bold");
         hRange.setBackground("#111827");
         hRange.setFontColor("#FFFFFF");
+        configSheet.setFrozenRows(1);
       }
+      
       var lastRow = configSheet.getLastRow();
       var foundRow = -1;
       if (lastRow > 1) {
         var idValues = configSheet.getRange(2, 2, lastRow - 1, 1).getValues();
         for (var r = 0; r < idValues.length; r++) {
-          if (String(idValues[r][0]) === String(payload.form.id)) {
+          if (String(idValues[r][0]) === String(formId)) {
             foundRow = r + 2;
             break;
           }
         }
       }
+      
       var nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || "GMT+5:30", "yyyy-MM-dd HH:mm:ss");
-      var jsonPayload = JSON.stringify(payload.form);
+      var jsonPayload = JSON.stringify(formObj);
       if (foundRow > 0) {
-        configSheet.getRange(foundRow, 1, 1, 3).setValues([[nowStr, payload.form.id, jsonPayload]]);
+        configSheet.getRange(foundRow, 1, 1, 4).setValues([[nowStr, formId, eventTitle, jsonPayload]]);
       } else {
-        configSheet.appendRow([nowStr, payload.form.id, jsonPayload]);
+        configSheet.appendRow([nowStr, formId, eventTitle, jsonPayload]);
       }
+
+      // B. Instantly Pre-create the dedicated Sheet tab for this event in the workspace!
+      var createdTabName = "";
+      if (eventTitle) {
+        // Clean invalid characters for sheet tab names (: \ / ? * [ ])
+        var cleanTab = eventTitle.split(':')[0].replace(/[:\\/?*\[\]]/g, '').trim().substring(0, 30);
+        if (cleanTab) {
+          createdTabName = cleanTab;
+          var eventSheet = ss.getSheetByName(cleanTab);
+          if (!eventSheet) {
+            // If default sheet is empty and named 'Sheet1', rename it; otherwise insert a new tab
+            var activeSheet = ss.getActiveSheet();
+            if (activeSheet && activeSheet.getLastRow() === 0 && (activeSheet.getName() === "Sheet1" || activeSheet.getName() === "Sheet 1")) {
+              eventSheet = activeSheet;
+              eventSheet.setName(cleanTab);
+            } else {
+              eventSheet = ss.insertSheet(cleanTab);
+            }
+          }
+
+          // If the event sheet does not have headers yet, initialize columns right away!
+          if (eventSheet.getLastRow() === 0) {
+            var colHeaders = ["Timestamp", "Booking ID"];
+            if (Array.isArray(formObj.questions)) {
+              for (var q = 0; q < formObj.questions.length; q++) {
+                var qItem = formObj.questions[q];
+                if (qItem && qItem.title && colHeaders.indexOf(qItem.title) === -1) {
+                  colHeaders.push(qItem.title);
+                }
+              }
+            }
+            eventSheet.getRange(1, 1, 1, colHeaders.length).setValues([colHeaders]);
+            var headerStyle = eventSheet.getRange(1, 1, 1, colHeaders.length);
+            headerStyle.setFontWeight("bold");
+            headerStyle.setBackground("#111827");
+            headerStyle.setFontColor("#FFFFFF");
+            eventSheet.setFrozenRows(1);
+          }
+        }
+      }
+
+      // Clean up legacy corrupted 'Registrations' tab if it only contains the old [action, form] columns
+      var legacySheet = ss.getSheetByName("Registrations");
+      if (legacySheet && legacySheet.getLastRow() > 0 && legacySheet.getLastColumn() <= 3) {
+        var firstRow = legacySheet.getRange(1, 1, 1, legacySheet.getLastColumn()).getValues()[0];
+        if (firstRow.indexOf("action") !== -1 && firstRow.indexOf("form") !== -1) {
+          // If only corrupted rows exist, clear it or remove to keep sheet clean
+          try {
+            if (ss.getSheets().length > 1) {
+              ss.deleteSheet(legacySheet);
+            }
+          } catch (delErr) {}
+        }
+      }
+
       return ContentService.createTextOutput(JSON.stringify({
         status: "success",
-        message: "Form config synced to Google Sheet",
-        formId: payload.form.id
+        message: "Form configuration synced and dedicated event sheet ready in workspace",
+        formId: formId,
+        tabName: createdTabName
       })).setMimeType(ContentService.MimeType.JSON);
     }
+
+    // =========================================================================
+    // ACTION 2: Attendee Registration Submission
+    // =========================================================================
 
     // Determine target sheet/tab based on Event Title (auto-creates a tab per event!)
     var rawTitle = payload["_eventTitle"] || payload["Event Title"] || "";
     var tabName = "Registrations";
     if (rawTitle) {
-      // Clean invalid characters for sheet tab names (: \ / ? * [ ])
       tabName = rawTitle.split(':')[0].replace(/[:\\/?*\[\]]/g, '').trim().substring(0, 30);
     }
     
@@ -149,18 +222,17 @@ function doPost(e) {
       }
     }
 
-    // If sheet is completely empty, initialize headers ONLY with fields present in payload
+    // If sheet is completely empty, initialize headers ONLY with valid question fields
     if (headers.length === 0) {
       var initialHeaders = [];
       if (payload["Timestamp"] !== undefined) initialHeaders.push("Timestamp");
       if (payload["Booking ID"] !== undefined) initialHeaders.push("Booking ID");
 
-      // Only add titles that were actually submitted in this form
+      // Only add titles that were actually submitted in this form (skip internal keys)
       for (var key in payload) {
         if (payload.hasOwnProperty(key)) {
-          // Ignore internal metadata fields starting with _ (e.g. _eventTitle, _formId)
           if (key.indexOf("_") === 0) continue;
-          if (key === "Timestamp" || key === "Booking ID") continue;
+          if (key === "action" || key === "form" || key === "Timestamp" || key === "Booking ID") continue;
           if (initialHeaders.indexOf(key) === -1) {
             initialHeaders.push(key);
           }
@@ -170,8 +242,6 @@ function doPost(e) {
       headers = initialHeaders;
       if (headers.length > 0) {
         sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-        
-        // Style header row: bold, dark background, white text, freeze top row
         var headerRange = sheet.getRange(1, 1, 1, headers.length);
         headerRange.setFontWeight("bold");
         headerRange.setBackground("#111827");
@@ -184,6 +254,7 @@ function doPost(e) {
       for (var key in payload) {
         if (payload.hasOwnProperty(key)) {
           if (key.indexOf("_") === 0) continue;
+          if (key === "action" || key === "form") continue;
           if (updatedHeaders.indexOf(key) === -1) {
             updatedHeaders.push(key);
           }
@@ -212,14 +283,43 @@ function doPost(e) {
       } else if (Array.isArray(value)) {
         rowData.push(value.join(", "));
       } else {
-        rowData.push(String(value));
+        var strVal = String(value);
+
+        // =====================================================================
+        // Automatic Payment Proof / Image Upload to Google Drive
+        // If an attendee uploaded a screenshot/image (data:image/...;base64,...),
+        // save it directly to Google Drive and store the shareable link in the cell!
+        // =====================================================================
+        if (strVal.indexOf("data:image/") === 0 && strVal.indexOf(";base64,") !== -1) {
+          try {
+            var parts = strVal.split(";base64,");
+            var mime = "image/jpeg";
+            var mimeMatch = parts[0].match(/data:([^;]+)/);
+            if (mimeMatch) mime = mimeMatch[1];
+            var ext = mime.indexOf("png") !== -1 ? ".png" : (mime.indexOf("webp") !== -1 ? ".webp" : ".jpg");
+            var decoded = Utilities.base64Decode(parts[1]);
+            var fileName = "PaymentProof_" + (payload["Booking ID"] || ("reg_" + Date.now())) + ext;
+            var blob = Utilities.newBlob(decoded, mime, fileName);
+            var driveFile = DriveApp.createFile(blob);
+            driveFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+            strVal = driveFile.getUrl();
+          } catch (driveErr) {
+            // Graceful fallback if Google Drive authorization is pending:
+            // Insert formula or shortened preview note so Google Sheets cell limits aren't exceeded
+            if (strVal.length > 500) {
+              strVal = "[Image Proof Uploaded: " + (payload["Booking ID"] || "receipt") + "]";
+            }
+          }
+        }
+
+        rowData.push(strVal);
       }
     }
 
     // Append the row to Google Sheets
     sheet.appendRow(rowData);
 
-    // Auto-resize columns periodically (optional, clean layout)
+    // Auto-resize columns periodically for a polished view
     if (sheet.getLastRow() % 10 === 0) {
       sheet.autoResizeColumns(1, headers.length);
     }
@@ -228,6 +328,7 @@ function doPost(e) {
       status: "success",
       message: "Registration recorded successfully",
       bookingId: payload["Booking ID"] || "",
+      sheetName: tabName,
       row: sheet.getLastRow()
     })).setMimeType(ContentService.MimeType.JSON);
 
