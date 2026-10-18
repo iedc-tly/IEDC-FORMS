@@ -50,7 +50,7 @@ function doPost(e) {
     }
 
     // Determine target sheet/tab based on Event Title (auto-creates a tab per event!)
-    var rawTitle = payload["Event Title"] || "";
+    var rawTitle = payload["_eventTitle"] || payload["Event Title"] || "";
     var tabName = "Registrations";
     if (rawTitle) {
       // Clean invalid characters for sheet tab names (: \ / ? * [ ])
@@ -75,62 +75,69 @@ function doPost(e) {
     }
 
     // Fetch existing headers or initialize them
-    var lastColumn = Math.max(sheet.getLastColumn(), 1);
+    var lastColumn = sheet.getLastColumn();
+    var lastRow = sheet.getLastRow();
     var headers = [];
-    if (sheet.getLastRow() > 0) {
-      headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
-    }
-
-    // Standard column order preference
-    var defaultPriorityKeys = [
-      "Timestamp",
-      "Booking ID",
-      "Event Title",
-      "Event Date",
-      "Full Name",
-      "Email Address",
-      "Phone / WhatsApp",
-      "College / Organization",
-      "Department / Stream",
-      "Year of Study",
-      "Roll / Registration No",
-      "T-Shirt Size",
-      "Food Preference",
-      "Ticket Category",
-      "Registration Fee"
-    ];
-
-    // If sheet is completely empty, initialize with default priority keys
-    if (headers.length === 0 || (headers.length === 1 && headers[0] === "")) {
-      headers = defaultPriorityKeys.slice();
-      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-      
-      // Style header row: bold, dark background, white text, freeze top row
-      var headerRange = sheet.getRange(1, 1, 1, headers.length);
-      headerRange.setFontWeight("bold");
-      headerRange.setBackground("#111827");
-      headerRange.setFontColor("#FFFFFF");
-      sheet.setFrozenRows(1);
-    }
-
-    // Check if any incoming field is missing from headers, and dynamically append new columns!
-    var updatedHeaders = headers.slice();
-    for (var key in payload) {
-      if (payload.hasOwnProperty(key)) {
-        if (updatedHeaders.indexOf(key) === -1) {
-          updatedHeaders.push(key);
+    if (lastRow > 0 && lastColumn > 0) {
+      var rawHeaders = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+      for (var h = 0; h < rawHeaders.length; h++) {
+        var hVal = rawHeaders[h];
+        if (hVal !== "" && hVal !== null && hVal !== undefined) {
+          headers.push(String(hVal));
         }
       }
     }
 
-    // If new columns were discovered, update row 1 headers in the sheet
-    if (updatedHeaders.length > headers.length) {
-      sheet.getRange(1, 1, 1, updatedHeaders.length).setValues([updatedHeaders]);
-      var newHeaderRange = sheet.getRange(1, 1, 1, updatedHeaders.length);
-      newHeaderRange.setFontWeight("bold");
-      newHeaderRange.setBackground("#111827");
-      newHeaderRange.setFontColor("#FFFFFF");
-      headers = updatedHeaders;
+    // If sheet is completely empty, initialize headers ONLY with fields present in payload
+    if (headers.length === 0) {
+      var initialHeaders = [];
+      if (payload["Timestamp"] !== undefined) initialHeaders.push("Timestamp");
+      if (payload["Booking ID"] !== undefined) initialHeaders.push("Booking ID");
+
+      // Only add titles that were actually submitted in this form
+      for (var key in payload) {
+        if (payload.hasOwnProperty(key)) {
+          // Ignore internal metadata fields starting with _ (e.g. _eventTitle, _formId)
+          if (key.indexOf("_") === 0) continue;
+          if (key === "Timestamp" || key === "Booking ID") continue;
+          if (initialHeaders.indexOf(key) === -1) {
+            initialHeaders.push(key);
+          }
+        }
+      }
+
+      headers = initialHeaders;
+      if (headers.length > 0) {
+        sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+        
+        // Style header row: bold, dark background, white text, freeze top row
+        var headerRange = sheet.getRange(1, 1, 1, headers.length);
+        headerRange.setFontWeight("bold");
+        headerRange.setBackground("#111827");
+        headerRange.setFontColor("#FFFFFF");
+        sheet.setFrozenRows(1);
+      }
+    } else {
+      // Sheet already has headers: dynamically append any newly introduced form questions
+      var updatedHeaders = headers.slice();
+      for (var key in payload) {
+        if (payload.hasOwnProperty(key)) {
+          if (key.indexOf("_") === 0) continue;
+          if (updatedHeaders.indexOf(key) === -1) {
+            updatedHeaders.push(key);
+          }
+        }
+      }
+
+      // If new columns were discovered, update row 1 headers in the sheet
+      if (updatedHeaders.length > headers.length) {
+        sheet.getRange(1, 1, 1, updatedHeaders.length).setValues([updatedHeaders]);
+        var newHeaderRange = sheet.getRange(1, 1, 1, updatedHeaders.length);
+        newHeaderRange.setFontWeight("bold");
+        newHeaderRange.setBackground("#111827");
+        newHeaderRange.setFontColor("#FFFFFF");
+        headers = updatedHeaders;
+      }
     }
 
     // Build row values in the exact order of the headers

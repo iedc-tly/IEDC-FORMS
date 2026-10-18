@@ -341,17 +341,15 @@ const FormsStore = (function () {
     const bookingId = `IEDC-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const timestamp = new Date().toLocaleString();
 
+    // 1. Complete local record for offline backup & admin dashboard
     const record = {
       "Timestamp": timestamp,
       "Booking ID": bookingId,
       "Form ID": form.id,
       "Event Title": form.title,
-      "Event Date": form.dateStr || "",
-      "Registration Fee": "₹0 (Free)",
       ...answers
     };
 
-    // 1. Save locally in localStorage as a guaranteed offline backup
     try {
       const list = getSubmissions();
       list.unshift(record);
@@ -360,7 +358,31 @@ const FormsStore = (function () {
       console.error("Local storage error:", e);
     }
 
-    // 2. Dispatch to Google Apps Script Webhook (if provided)
+    // 2. Prepare payload for Google Sheets:
+    // ONLY contains Timestamp, Booking ID, and the exact question titles created in this form!
+    const sheetPayload = {
+      "_eventTitle": form.title, // Internal routing parameter for tab naming (not added as a column)
+      "Timestamp": timestamp,
+      "Booking ID": bookingId
+    };
+
+    // Add questions in the exact order created in the form
+    if (Array.isArray(form.questions)) {
+      form.questions.forEach(q => {
+        if (q && q.title) {
+          sheetPayload[q.title] = answers[q.title] !== undefined ? answers[q.title] : "";
+        }
+      });
+    }
+
+    // Add any additional form fields if not already captured
+    for (const key of Object.keys(answers)) {
+      if (sheetPayload[key] === undefined) {
+        sheetPayload[key] = answers[key];
+      }
+    }
+
+    // 3. Dispatch to Google Apps Script Webhook (if provided)
     const webhookUrl = form.sheetWebhookUrl || localStorage.getItem('iedc_global_webhook_url') || DEFAULT_WEBHOOK_URL;
     if (webhookUrl && webhookUrl.startsWith('http')) {
       try {
@@ -370,7 +392,7 @@ const FormsStore = (function () {
           headers: {
             'Content-Type': 'text/plain;charset=utf-8'
           },
-          body: JSON.stringify(record)
+          body: JSON.stringify(sheetPayload)
         });
       } catch (err) {
         console.warn("Google Sheet webhook POST notice:", err);
