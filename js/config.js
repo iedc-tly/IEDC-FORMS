@@ -16,8 +16,8 @@ const APP_CONFIG = {
   currencySymbol: "₹",
 
   // Google Apps Script Web App URL
-  // Can be set here or via the in-app "Sheet Setup" modal (stored in localStorage)
-  googleSheetWebhookUrl: "",
+  // Deployed from Code.gs
+  googleSheetWebhookUrl: "https://script.google.com/macros/s/AKfycbwDVU0lxAQ2hcyPsojeX82wMTmb7ammt-8rxAJHkfwTevBftzI4-mKkZz-5DIZQICLaFw/exec",
 
   // Pre-built questions catalog (like Google Forms / Zoho Forms)
   prebuiltQuestions: [

@@ -9,6 +9,7 @@ const FormsStore = (function () {
 
   const FORMS_KEY = 'iedc_forms_db';
   const SUBMISSIONS_KEY = 'iedc_submissions_db';
+  const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwDVU0lxAQ2hcyPsojeX82wMTmb7ammt-8rxAJHkfwTevBftzI4-mKkZz-5DIZQICLaFw/exec';
 
   // Prebuilt Question Templates Catalog (Google Forms / Zoho Forms style)
   const PREBUILT_TEMPLATES = [
@@ -131,7 +132,7 @@ const FormsStore = (function () {
       dateStr: "Fri, Nov 14 – Sun, Nov 16, 2026",
       timeStr: "09:00 AM IST onwards",
       venue: "Innovation Hub & Convention Center, Campus North Block",
-      sheetWebhookUrl: "", // Admin can paste their Google Apps Script URL here
+      sheetWebhookUrl: DEFAULT_WEBHOOK_URL,
       fee: "₹0 (Free)",
       questions: [
         {
@@ -215,7 +216,7 @@ const FormsStore = (function () {
       dateStr: "Saturday, Dec 05, 2026",
       timeStr: "09:30 AM - 05:30 PM IST",
       venue: "Auditorium Grand Hall, Senate Complex",
-      sheetWebhookUrl: "",
+      sheetWebhookUrl: DEFAULT_WEBHOOK_URL,
       fee: "₹0 (Free)",
       questions: [
         {
@@ -278,7 +279,16 @@ const FormsStore = (function () {
     try {
       const stored = localStorage.getItem(FORMS_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        let updated = false;
+        parsed.forEach(f => {
+          if (!f.sheetWebhookUrl) {
+            f.sheetWebhookUrl = DEFAULT_WEBHOOK_URL;
+            updated = true;
+          }
+        });
+        if (updated) localStorage.setItem(FORMS_KEY, JSON.stringify(parsed));
+        return parsed;
       }
     } catch (e) {
       console.warn("Error reading forms from localStorage:", e);
@@ -351,7 +361,7 @@ const FormsStore = (function () {
     }
 
     // 2. Dispatch to Google Apps Script Webhook (if provided)
-    const webhookUrl = form.sheetWebhookUrl || localStorage.getItem('iedc_global_webhook_url') || '';
+    const webhookUrl = form.sheetWebhookUrl || localStorage.getItem('iedc_global_webhook_url') || DEFAULT_WEBHOOK_URL;
     if (webhookUrl && webhookUrl.startsWith('http')) {
       try {
         await fetch(webhookUrl, {

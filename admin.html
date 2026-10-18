@@ -169,7 +169,7 @@
                 </label>
                 <button type="button" class="btn btn-secondary btn-sm" id="btnTestWebhook">Test Connection</button>
               </div>
-              <input class="form-control" type="url" id="builderSheetUrl" placeholder="Paste your Google Apps Script Web App URL (starts with https://script.google.com/macros/s/...)">
+              <input class="form-control" type="url" id="builderSheetUrl" value="https://script.google.com/macros/s/AKfycbwDVU0lxAQ2hcyPsojeX82wMTmb7ammt-8rxAJHkfwTevBftzI4-mKkZz-5DIZQICLaFw/exec" placeholder="https://script.google.com/macros/s/AKfycbw.../exec">
               <div id="webhookTestResult" style="font-size:0.82rem; margin-top:6px;"></div>
 
               <details style="margin-top:10px; font-size:0.84rem; color:var(--text-secondary);">
@@ -503,7 +503,7 @@
         dom.builderTime.value = '';
         dom.builderDesc.value = '';
         dom.builderBanner.value = 'assets/images/hackathon.jpg';
-        dom.builderSheetUrl.value = '';
+        dom.builderSheetUrl.value = 'https://script.google.com/macros/s/AKfycbwDVU0lxAQ2hcyPsojeX82wMTmb7ammt-8rxAJHkfwTevBftzI4-mKkZz-5DIZQICLaFw/exec';
         
         // Start with basic questions
         builderQuestions = [
