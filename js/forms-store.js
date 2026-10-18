@@ -323,6 +323,91 @@ const FormsStore = (function () {
   }
 
   /**
+   * Cross-device URL encoding & decoding
+   * Enables form links to work reliably on ANY phone/laptop when shared
+   * by embedding the form structure into a lightweight, URL-safe payload.
+   */
+  function encodeFormToUrl(form) {
+    if (!form) return '';
+    try {
+      const compact = {
+        id: form.id || '',
+        title: form.title || '',
+        venue: form.venue || '',
+        dateStr: form.dateStr || '',
+        timeStr: form.timeStr || '',
+        description: form.description || '',
+        bannerUrl: form.bannerUrl || '',
+        sheetWebhookUrl: form.sheetWebhookUrl || '',
+        fee: form.fee || '₹0 (Free)',
+        questions: Array.isArray(form.questions) ? form.questions : []
+      };
+      const jsonStr = JSON.stringify(compact);
+      const utf8Bytes = new TextEncoder().encode(jsonStr);
+      let binary = '';
+      for (let i = 0; i < utf8Bytes.byteLength; i++) {
+        binary += String.fromCharCode(utf8Bytes[i]);
+      }
+      const b64 = btoa(binary);
+      // URL-safe Base64: '+' -> '-', '/' -> '_', strip trailing '='
+      return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    } catch (e) {
+      console.error("Error encoding form to URL:", e);
+      return '';
+    }
+  }
+
+  function decodeFormFromUrl(encodedStr) {
+    if (!encodedStr) return null;
+    try {
+      let clean = decodeURIComponent(encodedStr.trim());
+      let b64 = clean.replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4) {
+        b64 += '=';
+      }
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      const jsonStr = new TextDecoder().decode(bytes);
+      const form = JSON.parse(jsonStr);
+      if (form && form.id && form.title) {
+        return form;
+      }
+    } catch (e) {
+      console.warn("Error decoding form from URL data:", e);
+    }
+    return null;
+  }
+
+  function getShareableUrl(formOrId) {
+    const form = typeof formOrId === 'string' ? getFormById(formOrId) : formOrId;
+    if (!form) return '';
+
+    let base;
+    try {
+      let href = window.location.href.split('?')[0].split('#')[0];
+      if (href.endsWith('.html')) {
+        base = href.replace(/[^/]+\.html$/, 'index.html');
+      } else if (href.endsWith('/')) {
+        base = href + 'index.html';
+      } else {
+        base = href + '/index.html';
+      }
+    } catch (e) {
+      base = 'index.html';
+    }
+
+    const encoded = encodeFormToUrl(form);
+    if (encoded) {
+      return `${base}?form=${encodeURIComponent(form.id)}&d=${encoded}`;
+    }
+    return `${base}?form=${encodeURIComponent(form.id)}`;
+  }
+
+
+  /**
    * Submissions Management
    */
   function getSubmissions(formId = null) {
@@ -414,6 +499,9 @@ const FormsStore = (function () {
     getSubmissions,
     recordSubmission,
     clearSubmissions,
+    encodeFormToUrl,
+    decodeFormFromUrl,
+    getShareableUrl,
     PREBUILT_TEMPLATES
   };
 })();

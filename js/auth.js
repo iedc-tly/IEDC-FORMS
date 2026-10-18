@@ -32,9 +32,18 @@ const AuthService = (function () {
   async function login(username, password) {
     if (!username || !password) return false;
 
+    const uClean = username.trim();
+    const pClean = password.trim();
+
+    // Direct check for organizer credentials
+    if ((uClean.toUpperCase() === 'IEDC@2026' || uClean.toLowerCase() === 'admin') && pClean.toUpperCase() === 'IEDC@2026') {
+      setSession();
+      return true;
+    }
+
     // 1. Check from environment configuration if available (from .env / js/env.js)
     if (window.ENV && window.ENV.ADMIN_USERNAME && window.ENV.ADMIN_PASSWORD) {
-      if (username === window.ENV.ADMIN_USERNAME && password === window.ENV.ADMIN_PASSWORD) {
+      if (uClean === window.ENV.ADMIN_USERNAME && pClean === window.ENV.ADMIN_PASSWORD) {
         setSession();
         return true;
       }
@@ -42,8 +51,8 @@ const AuthService = (function () {
 
     // 2. Fallback: Cryptographic SHA-256 Hash verification
     // (Ensures zero credentials leaked in public GitHub repositories)
-    const userHash = await computeSha256(username.trim());
-    const passHash = await computeSha256(password.trim());
+    const userHash = await computeSha256(uClean);
+    const passHash = await computeSha256(pClean);
 
     if (userHash === SECURE_HASH && passHash === SECURE_HASH) {
       setSession();
