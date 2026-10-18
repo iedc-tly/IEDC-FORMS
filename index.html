@@ -276,17 +276,18 @@
         }
       }
 
-      // B. Look up form by ID from local storage / catalog
+      // B. Baseline form from local cache / catalog (for instant render)
       if (!currentForm && formId) {
         currentForm = FormsStore.getFormById(formId);
       }
 
-      // C. If still not found and a formId was requested, fetch from Google Sheets cloud!
-      if (!currentForm && formId) {
+      // C. Always check Google Sheets cloud for the latest published questions & updates!
+      if (formId) {
         try {
-          currentForm = await FormsStore.fetchFormFromCloud(formId);
-          if (currentForm) {
-            FormsStore.saveForm(currentForm, true); // Cache locally
+          const cloudForm = await FormsStore.fetchFormFromCloud(formId);
+          if (cloudForm && cloudForm.title) {
+            currentForm = cloudForm;
+            FormsStore.saveForm(cloudForm, true); // Cache latest published version locally
           }
         } catch (err) {
           console.warn("Cloud form fetch error:", err);

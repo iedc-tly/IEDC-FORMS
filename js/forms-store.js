@@ -682,23 +682,34 @@ const FormsStore = (function () {
   async function fetchFormFromCloud(formId, webhookUrl) {
     const url = webhookUrl || localStorage.getItem('iedc_global_webhook_url') || DEFAULT_WEBHOOK_URL;
     if (!url || !url.startsWith('http')) return null;
+
+    async function queryGas(idToTry) {
+      try {
+        const fetchUrl = `${url}?action=get_form&id=${encodeURIComponent(idToTry)}`;
+        const res = await fetch(fetchUrl);
+        if (res.ok) {
+          const text = await res.text();
+          let data = null;
+          try {
+            data = JSON.parse(text);
+            if (typeof data === 'string') data = JSON.parse(data);
+          } catch (jsonErr) {}
+          if (data && data.title && !data.error) return data;
+        }
+      } catch (err) {}
+      return null;
+    }
+
     try {
-      const fetchUrl = `${url}?action=get_form&id=${encodeURIComponent(formId)}`;
-      const res = await fetch(fetchUrl);
-      if (res.ok) {
-        const text = await res.text();
-        let data = null;
-        try {
-          data = JSON.parse(text);
-          if (typeof data === 'string') {
-            data = JSON.parse(data);
-          }
-        } catch (jsonErr) {
-          console.warn("Could not parse cloud form response:", jsonErr);
-        }
-        if (data && data.title && !data.error) {
-          return data;
-        }
+      let data = await queryGas(formId);
+      if (data) return data;
+
+      // Check alternate aliases (e126 <-> interactive-session)
+      const clean = String(formId).toLowerCase().trim();
+      const alt = (clean === 'e126' || clean === 'e1') ? 'interactive-session' : (clean === 'interactive-session' ? 'e126' : null);
+      if (alt) {
+        data = await queryGas(alt);
+        if (data) return data;
       }
     } catch (e) {
       console.warn("Cloud form fetch notice:", e);
