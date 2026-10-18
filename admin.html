@@ -17,7 +17,7 @@
     <div class="app-header-inner">
       <div class="header-brand">
         <span class="brand-badge" style="background:var(--text-main);">ADMIN</span>
-        <span>IEDC Forms Studio</span>
+        <span>IEDC Forms</span>
       </div>
       <div class="header-actions" id="adminHeaderActions" style="display:none;">
         <a href="index.html" target="_blank" class="btn btn-secondary btn-sm" title="View Attendee Portal">
@@ -39,7 +39,7 @@
       <div class="login-card">
         <div class="login-brand-header">
           <span class="login-brand-badge">SECURE ACCESS</span>
-          <h1 class="login-title">Organizer Sign In</h1>
+          <h1 class="login-title">Sign In</h1>
           <p class="login-sub">Enter your authorized credentials to manage forms</p>
         </div>
 
@@ -194,7 +194,7 @@
           <!-- Card 2: Question Builder & Prebuilt Library -->
           <div class="form-card">
             <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:12px; color:var(--text-main);">
-              2. Form Questions Builder (Google Forms / Zoho Style)
+              2. Form Questions Builder
             </h3>
             <p style="font-size:0.86rem; color:var(--text-muted); margin-bottom:16px;">
               Add questions, customize question types (Single Select, Multiple Select, Numbers Only, Text), and configure options.
@@ -203,7 +203,7 @@
             <!-- Prebuilt Quick Add Bar -->
             <div class="prebuilt-picker-box">
               <div class="prebuilt-picker-title">
-                 1-Click Prebuilt Questions (Google & Zoho Forms Presets):
+                 1-Click Prebuilt Questions:
               </div>
               <div class="prebuilt-chips-grid" id="prebuiltChips">
                 <!-- Injected dynamically -->
@@ -290,7 +290,7 @@
         <div style="display:flex; gap:8px;">
           <input type="text" id="shareShortLinkInput" readonly class="form-control" style="font-size:0.82rem; font-family:monospace; background:#fff;">
           <button type="button" class="btn btn-primary btn-sm" onclick="copyModalShortLink()" style="white-space:nowrap;">
-            📋 Copy
+            Copy
           </button>
         </div>
       </div>
@@ -307,7 +307,7 @@
         <div style="display:flex; gap:8px;">
           <input type="text" id="shareUniversalLinkInput" readonly class="form-control" style="font-size:0.82rem; font-family:monospace; background:#fff;">
           <button type="button" class="btn btn-secondary btn-sm" onclick="copyModalUniversalLink()" style="white-space:nowrap;">
-            📋 Copy
+            Copy
           </button>
         </div>
       </div>
@@ -477,25 +477,25 @@
                   ${(f.description || '').substring(0, 90)}...
                 </p>
                 <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:14px;">
-                  📅 ${f.dateStr || 'Date TBD'} &nbsp;|&nbsp; 👥 <strong>${formSubmissions.length}</strong> Registrations
+                  DATE : ${f.dateStr || 'Date TBD'} &nbsp;|&nbsp; COUNT : <strong>${formSubmissions.length}</strong> Registrations
                 </div>
               </div>
 
               <div style="border-top:1px solid var(--border-color); padding-top:14px; display:flex; flex-wrap:wrap; gap:8px;">
                 <button class="btn btn-primary btn-sm" onclick="copyShortLink('${f.id}')" title="Copy clean short link">
-                  📋 Copy Short Link
+                   Copy Short Link
                 </button>
                 <button class="btn btn-secondary btn-sm" onclick="openShareModal('${f.id}')" title="View all link options">
                   🔗 Share Options
                 </button>
                 <a href="${formUrl}" target="_blank" class="btn btn-secondary btn-sm">
-                  👁️ Open
+                   Open
                 </a>
                 <button class="btn btn-secondary btn-sm" onclick="editForm('${f.id}')">
-                  ✏️ Edit
+                   Edit
                 </button>
                 <button class="btn btn-danger btn-sm" onclick="deleteFormHandler('${f.id}')">
-                  🗑️
+                   Delete
                 </button>
               </div>
             </div>
