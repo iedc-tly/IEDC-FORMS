@@ -9,7 +9,7 @@ const FormsStore = (function () {
 
   const FORMS_KEY = 'iedc_forms_db';
   const SUBMISSIONS_KEY = 'iedc_submissions_db';
-  const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzVuHuWV2-v5og7iw-hKcMgY3rqkfylUCalzkVI5WbvSv3nbqLoo_tgB_FimMtnPkrsMg/exec';
+  const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwoz1ixKx1vD53R4imzimA48EuZZgCiMOUO2Vz1m8ABtpvh3Fm6MkZ_ilQiXFstzLYd/exec';
 
   // Prebuilt Question Templates Catalog (Google Forms / Zoho Forms style)
   const PREBUILT_TEMPLATES = [
@@ -138,226 +138,8 @@ const FormsStore = (function () {
     }
   ];
 
-  // Default initial forms (Light aesthetic)
-  const INITIAL_FORMS = [
-    {
-      id: "hacknova-2026",
-      title: "HACKNOVA 2026: 36-Hour National Hackathon",
-      description: "Join the most anticipated student tech sprint of the year! 36 hours of coding, building, and mentorship. Free entry, complimentary meals, certificates, and $50k prize pool.",
-      bannerUrl: "assets/images/AnoopAmbika (1).jpeg",
-      dateStr: "Fri, Nov 14 – Sun, Nov 16, 2026",
-      timeStr: "09:00 AM IST onwards",
-      venue: "Innovation Hub & Convention Center, Campus North Block",
-      sheetWebhookUrl: DEFAULT_WEBHOOK_URL,
-      category: "Campus Event",
-      pricingType: "free",
-      fee: "₹0 (Free Entry)",
-      paymentQr: "",
-      paymentInstructions: "",
-      questions: [
-        {
-          id: "q_name",
-          title: "Full Name",
-          type: "text",
-          placeholder: "Enter your full name",
-          required: true
-        },
-        {
-          id: "q_email",
-          title: "Email Address",
-          type: "email",
-          placeholder: "Enter your college or personal email",
-          required: true,
-          helpText: "We will email your entry pass here"
-        },
-        {
-          id: "q_phone",
-          title: "Phone / WhatsApp Number",
-          type: "tel",
-          placeholder: "10-digit mobile number",
-          required: true
-        },
-        {
-          id: "q_college",
-          title: "College / University Name",
-          type: "text",
-          placeholder: "Your institution name",
-          required: true
-        },
-        {
-          id: "q_dept",
-          title: "Department / Branch",
-          type: "dropdown",
-          options: ["Computer Science & Engineering", "Information Technology", "AI & Data Science", "ECE", "EEE", "Mechanical", "Other"],
-          required: true
-        },
-        {
-          id: "q_year",
-          title: "Year of Study",
-          type: "single_select",
-          options: ["1st Year", "2nd Year", "3rd Year", "Final Year", "Postgraduate"],
-          required: true
-        },
-        {
-          id: "q_team_size",
-          title: "Number of Team Members",
-          type: "number",
-          placeholder: "e.g., 4 (Numbers only)",
-          required: false
-        },
-        {
-          id: "q_tracks",
-          title: "Preferred Hackathon Tracks",
-          type: "multiple_select",
-          options: ["FinTech & Open Banking", "Healthcare AI", "CleanTech & Green Energy", "Open Innovation"],
-          required: true
-        },
-        {
-          id: "q_tshirt",
-          title: "T-Shirt Size (for free swag)",
-          type: "single_select",
-          options: ["S", "M", "L", "XL", "XXL"],
-          required: true
-        },
-        {
-          id: "q_food",
-          title: "Dietary Preference",
-          type: "single_select",
-          options: ["Vegetarian", "Non-Vegetarian", "Jain Food"],
-          required: true
-        }
-      ]
-    },
-    {
-      id: "startup-summit-2026",
-      title: "Futuristic Startup Summit & AI Conclave",
-      description: "Meet student founders, angel investors, and AI leaders. Pitch your startup, attend keynote fireside chats, and explore future technologies. 100% Free Delegate Pass.",
-      bannerUrl: "assets/images/AnoopAmbika (2).jpeg",
-      dateStr: "Saturday, Dec 05, 2026",
-      timeStr: "09:30 AM - 05:30 PM IST",
-      venue: "Auditorium Grand Hall, Senate Complex",
-      sheetWebhookUrl: DEFAULT_WEBHOOK_URL,
-      category: "Campus Event",
-      pricingType: "free",
-      fee: "₹0 (Free Entry)",
-      paymentQr: "",
-      paymentInstructions: "",
-      questions: [
-        {
-          id: "q_name",
-          title: "Full Name",
-          type: "text",
-          placeholder: "Enter your full name",
-          required: true
-        },
-        {
-          id: "q_email",
-          title: "Email Address",
-          type: "email",
-          placeholder: "Enter email address",
-          required: true
-        },
-        {
-          id: "q_phone",
-          title: "Phone / WhatsApp Number",
-          type: "tel",
-          placeholder: "10-digit mobile number",
-          required: true
-        },
-        {
-          id: "q_org",
-          title: "College / Company / Startup Name",
-          type: "text",
-          placeholder: "Organization name",
-          required: true
-        },
-        {
-          id: "q_category",
-          title: "I am attending as",
-          type: "single_select",
-          options: ["Student Innovator", "Aspiring Founder", "Developer / Engineer", "Faculty / Researcher", "Investor"],
-          required: true
-        },
-        {
-          id: "q_years_exp",
-          title: "Years of Experience (or College Year)",
-          type: "number",
-          placeholder: "Numbers only (e.g. 2)",
-          required: false
-        },
-        {
-          id: "q_linkedin",
-          title: "LinkedIn Profile URL",
-          type: "text",
-          placeholder: "https://linkedin.com/in/...",
-          required: false
-        }
-      ]
-    },
-    {
-      id: "interactive-session",
-      aliases: ["e126", "e1-2026", "e1"],
-      title: "INTERACTIVE SESSION",
-      description: "Join the interactive session at College Auditorium. Engage with mentors, ask questions, and explore exciting campus initiatives.",
-      bannerUrl: "assets/images/AnoopAmbika (1).jpeg",
-      dateStr: "WEDNESDAY , OCTOBER 28 , 2026",
-      timeStr: "10:00 Am to 12:00 Pm",
-      venue: "COLLEGE AUDITORIUM",
-      sheetWebhookUrl: DEFAULT_WEBHOOK_URL,
-      category: "Campus Event",
-      pricingType: "free",
-      fee: "₹0 (Free Entry)",
-      paymentQr: "",
-      paymentInstructions: "",
-      questions: [
-        {
-          id: "q_name",
-          title: "Full Name",
-          type: "text",
-          required: true
-        },
-        {
-          id: "q_email",
-          title: "Email Address",
-          type: "email",
-          required: true
-        },
-        {
-          id: "q_phone",
-          title: "Phone / WhatsApp Number",
-          type: "tel",
-          required: true
-        },
-        {
-          id: "q_college",
-          title: "College",
-          type: "text",
-          required: true
-        },
-        {
-          id: "q_role",
-          title: "What is your role ",
-          type: "dropdown",
-          required: true,
-          options: ["Student", "Faculty", "Nodal Officer", "Others"]
-        },
-        {
-          id: "q_branch",
-          title: "Branch",
-          type: "dropdown",
-          required: true,
-          options: ["EC", "CS", "IT", "CIVIL", "MECH", "EEE", "ECS", "MBA / MCA"]
-        },
-        {
-          id: "q_semester",
-          title: "Semester",
-          type: "dropdown",
-          required: true,
-          options: ["S1", "S2", "S5", "S7"]
-        }
-      ]
-    }
-  ];
+  // Default initial forms (Clean & Empty for fresh setup)
+  const INITIAL_FORMS = [];
 
   /**
    * Initialize or retrieve forms database
@@ -365,38 +147,20 @@ const FormsStore = (function () {
   function getForms() {
     try {
       const stored = localStorage.getItem(FORMS_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
+      if (stored !== null) {
+        let parsed = JSON.parse(stored);
         let updated = false;
 
-        // Ensure default forms exist
-        if (!parsed.some(f => f.id === 'interactive-session')) {
-          const interactiveForm = INITIAL_FORMS.find(f => f.id === 'interactive-session');
-          if (interactiveForm) {
-            parsed.push(interactiveForm);
-            updated = true;
-          }
+        // Automatically purge obsolete demo test forms
+        const cleaned = parsed.filter(f => f && f.id && f.id !== 'hacknova-2026' && f.id !== 'startup-summit-2026');
+        if (cleaned.length !== parsed.length) {
+          parsed = cleaned;
+          updated = true;
         }
 
         parsed.forEach(f => {
-          if (!f.sheetWebhookUrl || f.sheetWebhookUrl.includes('AKfycbxPCFnYDvDrivGyDOqRx8clG0_JQeyoc7Glr41iayQ9iWZUbeKd1woO2S6F5Shh1JF1yw')) {
+          if (!f.sheetWebhookUrl || f.sheetWebhookUrl !== DEFAULT_WEBHOOK_URL) {
             f.sheetWebhookUrl = DEFAULT_WEBHOOK_URL;
-            updated = true;
-          }
-          if (!f.category) {
-            f.category = 'Campus Event';
-            updated = true;
-          }
-          if (!f.pricingType) {
-            f.pricingType = 'free';
-            updated = true;
-          }
-          if (!f.fee) {
-            f.fee = '₹0 (Free Entry)';
-            updated = true;
-          }
-          if (!f.bannerUrl || f.bannerUrl.includes('hackathon.jpg') || f.bannerUrl.includes('startup_conclave.jpg')) {
-            f.bannerUrl = f.id === 'startup-summit-2026' ? 'assets/images/AnoopAmbika (2).jpeg' : 'assets/images/AnoopAmbika (1).jpeg';
             updated = true;
           }
         });
@@ -406,9 +170,7 @@ const FormsStore = (function () {
     } catch (e) {
       console.warn("Error reading forms from localStorage:", e);
     }
-    // Seed default forms
-    localStorage.setItem(FORMS_KEY, JSON.stringify(INITIAL_FORMS));
-    return INITIAL_FORMS;
+    return [];
   }
 
   function getFormById(id) {
@@ -480,10 +242,11 @@ const FormsStore = (function () {
     return form;
   }
 
-  function deleteForm(id) {
+  async function deleteForm(id) {
     let forms = getForms();
     forms = forms.filter(f => f.id !== id);
     localStorage.setItem(FORMS_KEY, JSON.stringify(forms));
+    await deleteFormFromCloud(id);
     return forms;
   }
 
@@ -717,6 +480,52 @@ const FormsStore = (function () {
     return null;
   }
 
+  async function deleteFormFromCloud(formId, webhookUrl) {
+    const url = webhookUrl || localStorage.getItem('iedc_global_webhook_url') || DEFAULT_WEBHOOK_URL;
+    if (!url || !url.startsWith('http') || !formId) return false;
+    try {
+      await fetch(`${url}?action=delete_form&id=${encodeURIComponent(formId)}&_t=${Date.now()}`);
+      return true;
+    } catch (e) {
+      try {
+        await fetch(`${url}?action=delete_form&id=${encodeURIComponent(formId)}`, { mode: 'no-cors' });
+        return true;
+      } catch (err2) {
+        console.warn("Cloud delete notice:", err2);
+        return false;
+      }
+    }
+  }
+
+  async function fetchAllFormsFromCloud(webhookUrl) {
+    const url = webhookUrl || localStorage.getItem('iedc_global_webhook_url') || DEFAULT_WEBHOOK_URL;
+    if (!url || !url.startsWith('http')) return null;
+
+    try {
+      const fetchUrl = `${url}?action=get_all_forms&_t=${Date.now()}`;
+      const res = await fetch(fetchUrl);
+      if (res.ok) {
+        const text = await res.text();
+        let data = null;
+        try {
+          data = JSON.parse(text);
+          if (typeof data === 'string') data = JSON.parse(data);
+        } catch (jsonErr) {}
+
+        if (data && Array.isArray(data.forms)) {
+          // Filter out obsolete test demo forms
+          const validForms = data.forms.filter(f => f && f.id && f.title && f.id !== 'hacknova-2026' && f.id !== 'startup-summit-2026');
+          // Whatever the cloud state is (even if 0 forms), keep local storage in exact sync
+          localStorage.setItem(FORMS_KEY, JSON.stringify(validForms));
+          return validForms;
+        }
+      }
+    } catch (err) {
+      console.warn("Could not fetch all forms from cloud:", err);
+    }
+    return null;
+  }
+
 
   /**
    * Submissions Management
@@ -819,6 +628,8 @@ const FormsStore = (function () {
     getShortUrl,
     syncFormToCloud,
     fetchFormFromCloud,
+    fetchAllFormsFromCloud,
+    deleteFormFromCloud,
     slugify,
     AVAILABLE_BANNER_ASSETS,
     DEFAULT_BANNER_URL,
