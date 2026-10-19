@@ -219,12 +219,16 @@ const FormsStore = (function () {
       .replace(/^-+|-+$/g, '') || (`event-${Date.now().toString(36)}`);
   }
 
-  function saveForm(form, skipCloudSync = false) {
+  async function saveForm(form, skipCloudSync = false) {
     if (!form.category) form.category = 'Campus Event';
     if (!form.pricingType) form.pricingType = 'free';
     if (!form.fee) form.fee = form.pricingType === 'paid' ? '₹99' : '₹0 (Free Entry)';
     if (form.paymentQr === undefined) form.paymentQr = '';
     if (form.paymentInstructions === undefined) form.paymentInstructions = '';
+    // Always ensure the form uses the latest active webhook URL
+    if (!form.sheetWebhookUrl || form.sheetWebhookUrl.includes('AKfycbzVuHuWV2')) {
+      form.sheetWebhookUrl = DEFAULT_WEBHOOK_URL;
+    }
 
     const forms = getForms();
     const idx = forms.findIndex(f => f.id === form.id);
@@ -235,9 +239,9 @@ const FormsStore = (function () {
     }
     localStorage.setItem(FORMS_KEY, JSON.stringify(forms));
 
-    // Automatically sync form to connected Google Sheet in background
+    // Automatically sync form to connected Google Sheet
     if (!skipCloudSync) {
-      syncFormToCloud(form);
+      await syncFormToCloud(form);
     }
     return form;
   }
@@ -515,9 +519,22 @@ const FormsStore = (function () {
         if (data && Array.isArray(data.forms)) {
           // Filter out obsolete test demo forms
           const validForms = data.forms.filter(f => f && f.id && f.title && f.id !== 'hacknova-2026' && f.id !== 'startup-summit-2026');
-          // Whatever the cloud state is (even if 0 forms), keep local storage in exact sync
-          localStorage.setItem(FORMS_KEY, JSON.stringify(validForms));
-          return validForms;
+          if (validForms.length > 0) {
+            localStorage.setItem(FORMS_KEY, JSON.stringify(validForms));
+            return validForms;
+          } else {
+            // Cloud has 0 forms. Check if local has newly saved forms:
+            const local = getForms();
+            if (local.length > 0) {
+              // Push local forms up to the cloud!
+              for (const f of local) {
+                await syncFormToCloud(f, url);
+              }
+              return local;
+            }
+            localStorage.setItem(FORMS_KEY, JSON.stringify([]));
+            return [];
+          }
         }
       }
     } catch (err) {

@@ -586,15 +586,13 @@
         }
         try {
           const forms = await FormsStore.fetchAllFormsFromCloud();
-          if (forms && Array.isArray(forms) && forms.length > 0) {
-            renderFormsList();
-            renderSubmissionsTable();
-            if (dom.cloudSyncStatus) {
-              dom.cloudSyncStatus.innerHTML = '<span style="color:#059669;">☁️ Synced with Google Sheets</span>';
-            }
-            if (isUserInitiated) showToast('Forms refreshed from Google Sheets!');
-            return;
+          renderFormsList();
+          renderSubmissionsTable();
+          if (dom.cloudSyncStatus) {
+            dom.cloudSyncStatus.innerHTML = '<span style="color:#059669;">☁️ Synced with Google Sheets</span>';
           }
+          if (isUserInitiated) showToast('Forms refreshed from Google Sheets!');
+          return;
         } catch (e) {
           console.warn('Sync notice:', e);
         }
@@ -604,6 +602,9 @@
       }
 
       function initDashboard() {
+        if (dom.builderSheetUrl && (!dom.builderSheetUrl.value || dom.builderSheetUrl.value.includes('AKfycbzVuHuWV2'))) {
+          dom.builderSheetUrl.value = FormsStore.DEFAULT_WEBHOOK_URL;
+        }
         renderFormsList();
         renderPrebuiltChips();
         renderAdminAssetBanners();
@@ -1176,7 +1177,7 @@
       });
 
       // Save Form
-      dom.btnSaveForm.addEventListener('click', () => {
+      dom.btnSaveForm.addEventListener('click', async () => {
         const title = dom.builderTitle.value.trim();
         if (!title) {
           alert('Please enter an Event Title.');
@@ -1184,33 +1185,48 @@
           return;
         }
 
-        const rawId = dom.builderFormId.value.trim() || FormsStore.slugify(title) || `form-${Date.now()}`;
-        const id = FormsStore.slugify(rawId) || rawId;
-        const isPaid = builderPricingType === 'paid';
-        const feeVal = isPaid ? (dom.builderFee.value.trim() || '₹99') : '₹0 (Free Entry)';
+        const originalBtnText = dom.btnSaveForm.innerHTML;
+        dom.btnSaveForm.disabled = true;
+        dom.btnSaveForm.innerHTML = '<span>Saving to Google Sheets...</span>';
 
-        const formData = {
-          id: id,
-          title: title,
-          category: dom.builderCategory.value.trim() || 'Campus Event',
-          pricingType: builderPricingType,
-          fee: feeVal,
-          upiId: dom.builderUpiId ? dom.builderUpiId.value.trim() : '',
-          paymentQr: dom.builderPaymentQr ? dom.builderPaymentQr.value.trim() : '',
-          paymentInstructions: dom.builderPaymentInstructions ? dom.builderPaymentInstructions.value.trim() : '',
-          venue: dom.builderVenue.value.trim() || 'Campus Venue',
-          dateStr: dom.builderDate.value.trim() || 'Date TBD',
-          timeStr: dom.builderTime.value.trim() || '09:00 AM',
-          description: dom.builderDesc.value.trim() || '',
-          bannerUrl: dom.builderBanner.value.trim() || 'assets/images/AnoopAmbika (1).jpeg',
-          sheetWebhookUrl: dom.builderSheetUrl.value.trim(),
-          questions: builderQuestions
-        };
+        try {
+          const rawId = dom.builderFormId.value.trim() || FormsStore.slugify(title) || `form-${Date.now()}`;
+          const id = FormsStore.slugify(rawId) || rawId;
+          const isPaid = builderPricingType === 'paid';
+          const feeVal = isPaid ? (dom.builderFee.value.trim() || '₹99') : '₹0 (Free Entry)';
 
-        FormsStore.saveForm(formData);
-        showToast('Form published & synced to Google Sheets!');
-        dom.tabBtns[0].click(); // back to list
-        syncWithCloud(false);
+          const targetUrl = dom.builderSheetUrl.value.trim() || FormsStore.DEFAULT_WEBHOOK_URL;
+
+          const formData = {
+            id: id,
+            title: title,
+            category: dom.builderCategory.value.trim() || 'Campus Event',
+            pricingType: builderPricingType,
+            fee: feeVal,
+            upiId: dom.builderUpiId ? dom.builderUpiId.value.trim() : '',
+            paymentQr: dom.builderPaymentQr ? dom.builderPaymentQr.value.trim() : '',
+            paymentInstructions: dom.builderPaymentInstructions ? dom.builderPaymentInstructions.value.trim() : '',
+            venue: dom.builderVenue.value.trim() || 'Campus Venue',
+            dateStr: dom.builderDate.value.trim() || 'Date TBD',
+            timeStr: dom.builderTime.value.trim() || '09:00 AM',
+            description: dom.builderDesc.value.trim() || '',
+            bannerUrl: dom.builderBanner.value.trim() || 'assets/images/AnoopAmbika (1).jpeg',
+            sheetWebhookUrl: targetUrl,
+            questions: builderQuestions
+          };
+
+          await FormsStore.saveForm(formData);
+          showToast('✅ Form published & recorded in Google Sheets!');
+          dom.tabBtns[0].click(); // back to list
+          renderFormsList();
+          renderSubmissionsTable();
+        } catch (err) {
+          console.error('Error saving form:', err);
+          alert('Failed to save form: ' + err.message);
+        } finally {
+          dom.btnSaveForm.disabled = false;
+          dom.btnSaveForm.innerHTML = originalBtnText;
+        }
       });
 
       // 5. Render Submissions Tab
