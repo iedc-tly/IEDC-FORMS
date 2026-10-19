@@ -84,14 +84,20 @@
 
       <!-- TAB 1: ALL FORMS LIST -->
       <div id="tabForms" class="tab-pane">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
           <div>
             <h2 style="font-size:1.4rem; font-weight:800; color:var(--text-main);">Event Registration Forms</h2>
-            <p style="font-size:0.88rem; color:var(--text-muted);">Share direct form links with attendees. No login required for them.</p>
+            <p style="font-size:0.88rem; color:var(--text-muted);">Share direct form links with attendees. Forms automatically synchronize across all devices via Google Sheets.</p>
           </div>
-          <button class="btn btn-primary" id="btnCreateNewFormTop">
-            <span>+ Create New Form</span>
-          </button>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span id="cloudSyncStatus" style="font-size:0.8rem; font-weight:700; color:var(--text-muted); padding:6px 12px; border-radius:6px; background:#f1f5f9; display:inline-flex; align-items:center; gap:6px;">☁️ Synced</span>
+            <button class="btn btn-secondary btn-sm" id="btnSyncFromCloud" title="Pull latest forms from Google Sheets across devices">
+              <span>🔄 Refresh Forms</span>
+            </button>
+            <button class="btn btn-primary" id="btnCreateNewFormTop">
+              <span>+ Create New Form</span>
+            </button>
+          </div>
         </div>
 
         <div id="formsListGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:20px;">
@@ -255,7 +261,7 @@
                 </label>
                 <button type="button" class="btn btn-secondary btn-sm" id="btnTestWebhook">Test Connection</button>
               </div>
-              <input class="form-control" type="url" id="builderSheetUrl" value="https://script.google.com/macros/s/AKfycbzVuHuWV2-v5og7iw-hKcMgY3rqkfylUCalzkVI5WbvSv3nbqLoo_tgB_FimMtnPkrsMg/exec" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+              <input class="form-control" type="url" id="builderSheetUrl" value="https://script.google.com/macros/s/AKfycbwoz1ixKx1vD53R4imzimA48EuZZgCiMOUO2Vz1m8ABtpvh3Fm6MkZ_ilQiXFstzLYd/exec" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
               <div id="webhookTestResult" style="font-size:0.82rem; margin-top:6px;"></div>
 
               <details style="margin-top:10px; font-size:0.84rem; color:var(--text-secondary);">
@@ -462,6 +468,8 @@
         // Tab 1: Forms
         formsListGrid: document.getElementById('formsListGrid'),
         btnCreateNewFormTop: document.getElementById('btnCreateNewFormTop'),
+        cloudSyncStatus: document.getElementById('cloudSyncStatus'),
+        btnSyncFromCloud: document.getElementById('btnSyncFromCloud'),
 
         // Tab 2: Builder
         pricingTypeToggle: document.getElementById('pricingTypeToggle'),
@@ -572,17 +580,59 @@
         });
       });
 
+      async function syncWithCloud(isUserInitiated = false) {
+        if (dom.cloudSyncStatus) {
+          dom.cloudSyncStatus.innerHTML = '<span style="color:#d97706;">🔄 Syncing...</span>';
+        }
+        try {
+          const forms = await FormsStore.fetchAllFormsFromCloud();
+          if (forms && Array.isArray(forms) && forms.length > 0) {
+            renderFormsList();
+            renderSubmissionsTable();
+            if (dom.cloudSyncStatus) {
+              dom.cloudSyncStatus.innerHTML = '<span style="color:#059669;">☁️ Synced with Google Sheets</span>';
+            }
+            if (isUserInitiated) showToast('Forms refreshed from Google Sheets!');
+            return;
+          }
+        } catch (e) {
+          console.warn('Sync notice:', e);
+        }
+        if (dom.cloudSyncStatus) {
+          dom.cloudSyncStatus.innerHTML = '<span style="color:var(--text-muted);">☁️ Local Cache Active</span>';
+        }
+      }
+
       function initDashboard() {
         renderFormsList();
         renderPrebuiltChips();
         renderAdminAssetBanners();
         renderSubmissionsTable();
+        syncWithCloud(false);
+      }
+
+      if (dom.btnSyncFromCloud) {
+        dom.btnSyncFromCloud.addEventListener('click', () => syncWithCloud(true));
       }
 
       // 3. Render Forms List
       function renderFormsList() {
         const forms = FormsStore.getForms();
         dom.totalFormsCount.textContent = forms.length;
+
+        if (forms.length === 0) {
+          dom.formsListGrid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 50px 20px; background: #ffffff; border-radius: 12px; border: 2px dashed #cbd5e1;">
+              <div style="font-size: 2.5rem; margin-bottom: 10px;">📋</div>
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">No Forms Available</h3>
+              <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 18px;">Your forms catalog is clean. Click below to create your first event registration form!</p>
+              <button class="btn btn-primary" onclick="document.getElementById('btnCreateNewFormTop').click()">
+                + Create New Form
+              </button>
+            </div>
+          `;
+          return;
+        }
 
         dom.formsListGrid.innerHTML = forms.map(f => {
           const formSubmissions = FormsStore.getSubmissions(f.id);
@@ -796,11 +846,13 @@
         renderAdminAssetBanners();
       });
 
-      window.deleteFormHandler = function (id) {
-        if (confirm('Are you sure you want to delete this form? Attendee registrations will remain saved.')) {
-          FormsStore.deleteForm(id);
+      window.deleteFormHandler = async function (id) {
+        if (confirm('Are you sure you want to delete this form? It will be removed from all devices and the Google Sheet.')) {
+          showToast('Deleting form from cloud...');
+          await FormsStore.deleteForm(id);
           renderFormsList();
-          showToast('Form deleted');
+          showToast('Form deleted successfully');
+          syncWithCloud(false);
         }
       };
 
@@ -830,7 +882,7 @@
         dom.builderDesc.value = '';
         dom.builderBanner.value = 'assets/images/AnoopAmbika (1).jpeg';
         renderAdminAssetBanners();
-        dom.builderSheetUrl.value = 'https://script.google.com/macros/s/AKfycbzVuHuWV2-v5og7iw-hKcMgY3rqkfylUCalzkVI5WbvSv3nbqLoo_tgB_FimMtnPkrsMg/exec';
+        dom.builderSheetUrl.value = 'https://script.google.com/macros/s/AKfycbwoz1ixKx1vD53R4imzimA48EuZZgCiMOUO2Vz1m8ABtpvh3Fm6MkZ_ilQiXFstzLYd/exec';
         
         // Reset Pricing
         setBuilderPricingType('free');
@@ -1156,8 +1208,9 @@
         };
 
         FormsStore.saveForm(formData);
-        showToast('Form published successfully!');
+        showToast('Form published & synced to Google Sheets!');
         dom.tabBtns[0].click(); // back to list
+        syncWithCloud(false);
       });
 
       // 5. Render Submissions Tab

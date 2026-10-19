@@ -78,6 +78,77 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
+  // 2. Fetch all published forms (cross-device synchronization for Admin dashboard)
+  if (action === "get_all_forms") {
+    try {
+      var ss = getSpreadsheet();
+      var configSheet = ss.getSheetByName("_Forms_Config");
+      var formsList = [];
+      if (configSheet && configSheet.getLastRow() > 1) {
+        var rows = configSheet.getDataRange().getValues();
+        for (var i = 1; i < rows.length; i++) {
+          var jsonStr = "";
+          if (rows[i][3] && String(rows[i][3]).indexOf('{') !== -1) {
+            jsonStr = String(rows[i][3]);
+          } else if (rows[i][2] && String(rows[i][2]).indexOf('{') !== -1) {
+            jsonStr = String(rows[i][2]);
+          }
+          if (jsonStr) {
+            try {
+              var parsedObj = JSON.parse(jsonStr);
+              if (parsedObj && (parsedObj.id || parsedObj.title)) {
+                formsList.push(parsedObj);
+              }
+            } catch (pErr) {}
+          }
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success",
+        count: formsList.length,
+        forms: formsList
+      })).setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "error",
+        error: err.toString(),
+        forms: []
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // 3. Delete a form from _Forms_Config via GET
+  if (action === "delete_form" && id) {
+    try {
+      var ss = getSpreadsheet();
+      var configSheet = ss.getSheetByName("_Forms_Config");
+      var targetId = String(id).toLowerCase().trim();
+      var deleted = false;
+      if (configSheet && configSheet.getLastRow() > 1) {
+        var rows = configSheet.getDataRange().getValues();
+        for (var i = rows.length - 1; i >= 1; i--) {
+          var rowId = String(rows[i][1]).toLowerCase().trim();
+          if (rowId === targetId ||
+              (targetId === "e126" && rowId === "interactive-session") ||
+              (targetId === "interactive-session" && rowId === "e126")) {
+            configSheet.deleteRow(i + 1);
+            deleted = true;
+          }
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success",
+        deleted: deleted,
+        formId: id
+      })).setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "error",
+        error: err.toString()
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
   return ContentService.createTextOutput(JSON.stringify({
     status: "online",
     message: "IEDC Event Registration API is active and ready to receive bookings!",
@@ -197,6 +268,33 @@ function doPost(e) {
         message: "Form configuration synced and dedicated event sheet ready in workspace",
         formId: formId,
         tabName: createdTabName
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // =========================================================================
+    // ACTION: Delete Form from Cloud
+    // =========================================================================
+    if (payload.action === "delete_form" && (payload.id || payload.formId)) {
+      var targetId = String(payload.id || payload.formId).toLowerCase().trim();
+      var configSheet = ss.getSheetByName("_Forms_Config");
+      var deleted = false;
+      if (configSheet && configSheet.getLastRow() > 1) {
+        var rows = configSheet.getDataRange().getValues();
+        for (var i = rows.length - 1; i >= 1; i--) {
+          var rowId = String(rows[i][1]).toLowerCase().trim();
+          if (rowId === targetId ||
+              (targetId === "e126" && rowId === "interactive-session") ||
+              (targetId === "interactive-session" && rowId === "e126")) {
+            configSheet.deleteRow(i + 1);
+            deleted = true;
+          }
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success",
+        message: "Form deleted from cloud",
+        deleted: deleted,
+        formId: targetId
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
